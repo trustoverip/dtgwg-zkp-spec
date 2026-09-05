@@ -20,7 +20,7 @@
       "source": {
         "host": "github",
         "account": "trustoverip",
-        "repo": "toip-template"
+        "repo": "dtgwg-zkp-spec"
       },
       "external_specs": [
         {
