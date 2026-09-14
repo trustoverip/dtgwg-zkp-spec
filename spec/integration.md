@@ -18,7 +18,7 @@ This draft proposes a stricter presentation boundary than the current lab field-
 
 - Challenge: a nonempty string in the profile's specified encoding, with a defined entropy and size policy; numeric and object values are rejected.
 - Expiry: an explicitly specified time representation and validity rule. A proposed concrete task profile can use an RFC 3339 timestamp with a timezone, bounded clock skew and expiry checks. The lab's symbolic expiry labels are test-model inputs, not evidence of an implemented timestamp validator.
-- Requested predicates: a nonempty array of supported nonempty identifier strings. Specify ordering and duplicate handling before hashing; reject non-string or unsupported entries.
+- Requested predicates: a nonempty array of supported nonempty identifier strings. Specify ordering and duplicate handling before hashing; reject non-string or unsupported entries. Specify the identifier comparison rule (byte-exact, or a profiled canonical form) and how the verifier pins the definition and accept-list revision before binding; lookup and transcript construction use the same accepted statement, with no alias or version substitution after binding (the Implementation Guide, step 4).
 - Context: validate the descriptor and require the transcript's descriptor digest, purpose, scope, protocol and profile to agree with the authenticated request under the selected profile. Audience authorization and accepted registry state require explicit checks.
 - Public inputs: reject noncanonical or out-of-range scalar encodings and unsupported arity/profile combinations. Derive expected digest reductions locally; do not silently reduce an arbitrary malformed supplied scalar.
 

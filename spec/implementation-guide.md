@@ -49,11 +49,15 @@ The authenticated request supplies the audience, purpose, challenge, selected pr
 
 The verifier checks request binding, canonical encoding, profile/circuit identity, root authority and freshness, the cryptographic proof, and every declared external check. A rejected or unsupported input remains a failure; do not silently select a weaker profile. The Presentation Profiles section identifies the wire-format decisions still required.
 
+Before constructing or accepting a proof request, the selected profile defines how predicate identifiers are represented and compared, and which definitions the verifier accepts. Bind the accepted identifiers and the applicable profile/policy revision into the transcript. A valid digest or proof does not make an unknown predicate meaningful. A registry entry, alias or replacement recommendation does not automatically authorize a verifier to substitute another predicate. If identifier normalization is selected, apply the same specified rule before policy lookup and transcript construction, and reject inputs outside that profile rather than silently changing the statement after it has been bound. This is proposed guidance pending the credential specification's vocabulary decision ([cred-spec #52](https://github.com/trustoverip/dtgwg-cred-spec/issues/52), a repo-driven predicate registry); it selects no URI conversion, NFC rewriting or other normalization algorithm.
+
 ### Step 5: Return an interpretable result
 
 Represent at least three separate concepts in the application: proof verification result, policy decision and action outcome. The exact response schema belongs to the selected task profile; these conceptual stages are not newly defined wire fields.
 
 Successful verification reports the statement/profile and accepted state against which it was checked. Policy may still decline the operation. If an action is subsequently authorized, execution and its receipt are handled separately, with idempotency and reconciliation appropriate to that task.
+
+A profile distinguishes an authenticated statement about a vetting procedure from the relationship a proof establishes and the admission decision a community makes. Where an identity-vetting statement is used (the community predicate proposed in [cred-spec PR #50](https://github.com/trustoverip/dtgwg-cred-spec/pull/50)), its verification result retains the predicate's stated inference limits. A commitment to identity claims is not a holder-linkage commitment unless the selected construction explicitly defines and authenticates that relation. The mere presence of a liveness flag, commitment or valid signature cannot satisfy a missing membership or voucher-linkage clause.
 
 > **WG-04 — Proposed for ratification: result boundary.** Keep proof verification, policy acceptance and action completion distinct in the spec and implementation examples. Status: proposed wording; record the group's resolution and source discussion before treating it as adopted.
 
