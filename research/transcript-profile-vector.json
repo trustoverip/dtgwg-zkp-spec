@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "status": "synthetic lab encoding comparison; not a valid production task",
+  "transcript": {
+    "protocol": "test:protocol",
+    "profile": "test:profile",
+    "verifier": "test:verifier",
+    "contextDescriptorDigest": "test:contextDescriptorDigest",
+    "purpose": "test:purpose",
+    "scope": "test:scope",
+    "challenge": "test:challenge",
+    "sessionId": "test:sessionId",
+    "requestedPredicates": [
+      "membership"
+    ],
+    "policyRequirements": "test:policyRequirements",
+    "expiry": "test:expiry",
+    "snapshotRequirements": "test:snapshotRequirements",
+    "encodingVersion": "test:encodingVersion"
+  },
+  "domain": "dtg-zkp/transcript/v0",
+  "framing": "u32be(length(D)) || UTF8(D) || u32be(length(J)) || UTF8(J)",
+  "expectedFramedSha256": "2b81362bedf37ef741a68e23c2270e245f525ac3df3d71f59970fd064e7b19f9",
+  "expectedPlainCanonicalSha256": "43cee62ef34fe261e2403ec159cc5da293c2c03b80538475e902228ceb9d0dad",
+  "observedValidator": {
+    "numericChallengeAccepted": true,
+    "objectExpiryAccepted": true
+  },
+  "proposedStrictValidator": {
+    "numericChallengeAccepted": false,
+    "objectExpiryAccepted": false
+  },
+  "strictValidatorImplemented": false
+}
