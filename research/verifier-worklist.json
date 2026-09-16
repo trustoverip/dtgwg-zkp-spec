@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "status": "proposed-worklist-not-execution-results",
+  "runner": "DTG ZKP evidence verifier instance",
+  "policy": "Select one unblocked task per cycle; record evidence, preserve failures, do not publish or promote adoption automatically.",
+  "tasks": [
+    {
+      "id": "V01",
+      "name": "Freeze the comparison baseline",
+      "state": "ready for source review",
+      "depends": [],
+      "fit": "All trust-graph outcomes",
+      "work": "Pin the credential, task, registry, paper, implementation and proving-stack revisions. Record supported signature/credential formats, key custody, disclosure and setup assumptions for each candidate.",
+      "done": "A source manifest and compatibility matrix that marks unknowns and incompatible routes explicitly."
+    },
+    {
+      "id": "V02",
+      "name": "Re-run canonical and rejection fixtures",
+      "state": "existing runnable checks",
+      "depends": [
+        "V01"
+      ],
+      "fit": "Request binding and interpretable failure outcomes",
+      "work": "In the evidence repository, run node test.mjs from runtimes/canonical and runtimes/fixtures; run python test.py from runtimes/consumer-py. Capture commands, environment, outputs and fixture digests. Add shared vectors for framed versus plain transcript hashing and numeric challenge/object expiry rejection under the proposed strict profile; existing 11/11 canonical results do not cover these cases.",
+      "done": "Actual run evidence with matching canonical values and rejection outcomes; failures retained. This checks fixture interoperability, not a complete credential proof."
+    },
+    {
+      "id": "V03",
+      "name": "Reproduce the existing circuit baseline",
+      "state": "existing checks; circuit build required",
+      "depends": [
+        "V01"
+      ],
+      "fit": "Membership, reuse detection, distinctness and transcript components",
+      "work": "Follow the pinned runtimes/circom-gadget setup instructions. Run node test.mjs, node test-dual.mjs and node test-guardian.mjs there after their respective setups. Capture the manifest and actual proof-verification results; compare reports using verify-run.mjs separately.",
+      "done": "A reproducible component report distinguishing manifest acceptance, actual proof verification and locally observed test execution. Lab setup is labelled; a run by the same operator is not independent reproduction."
+    },
+    {
+      "id": "V04",
+      "name": "Implement credential authenticity and holder binding",
+      "state": "implementation needed",
+      "depends": [
+        "V01",
+        "V03"
+      ],
+      "fit": "Credential-bound membership eligibility; records 001 and 004",
+      "work": "Select an actual credential format. Bind issuer-authenticated fields and the holder key to the proof inputs. Identify in-circuit checks, external checks and unsupported hardware/non-exportable-key cases.",
+      "done": "Accepted genuine credential plus rejected altered fields/signature, wrong issuer and wrong holder. All acceptance dependencies are explicit."
+    },
+    {
+      "id": "V05",
+      "name": "Implement the root and status profile",
+      "state": "profile decision and implementation needed",
+      "depends": [
+        "V01"
+      ],
+      "fit": "Membership and non-revocation; records 001 and 006",
+      "work": "Pin signed root authority, leaf/hash format, witness updates and accepted staleness. Test revoked, unknown, expired and stale-state cases and unavailable-registry behavior.",
+      "done": "Root/status vectors and privacy notes covering the actual update path. Private witnesses are not exposed merely to avoid a live lookup."
+    },
+    {
+      "id": "V06",
+      "name": "Test complete transcript semantics",
+      "state": "profile and additional checks needed",
+      "depends": [
+        "V02",
+        "V03"
+      ],
+      "fit": "Every composed presentation; record 003",
+      "work": "Publish fixed public-input layouts and digest conversion. Test audience, challenge, context, profile and disclosure tampering, same-request replay and malformed encodings. Check the claimed proof-system property independently of scalar binding. Resolve WG-06a: specify the observed domain/length framing and scalar conversion; reconcile external digestMultibase encoding; implement strict field types and semantic checks before claiming request binding.",
+      "done": "Byte-exact manifests and negative vectors with a documented verifier replay policy. No claim of simulation extractability from a public-input test alone."
+    },
+    {
+      "id": "V07",
+      "name": "Evaluate each researched proving route",
+      "state": "comparative experiments needed",
+      "depends": [
+        "V04",
+        "V05",
+        "V06"
+      ],
+      "fit": "Select a compatible backend for the same credential-bound statement",
+      "work": "Evaluate the lab Groth16/Circom route, ProveKit, the SIROS/Longfellow route and the paper-derived construction against the same input contract. Evaluate Flock separately for standard-hash subworkloads before attempting a full credential comparison. Pin each artifact and record issuer changes, memory, time, proof size, security and setup assumptions.",
+      "done": "A fit matrix and matched measurements, or a documented incompatibility/blocker per route. Source-author benchmarks remain separate from local measurements; no claimed winner from unequal workloads."
+    },
+    {
+      "id": "V08",
+      "name": "Demonstrate the full community-anchored outcome",
+      "state": "composition and offline-linkage work needed",
+      "depends": [
+        "V04",
+        "V05",
+        "V06"
+      ],
+      "fit": "ADR-001; record 010",
+      "work": "Resolve and implement the offline voucher linkage artifact. Compose authenticated relationship evidence, both membership legs, control/linkage and accepted status. Exercise missing linkage, reused leaf, wrong relationship signer and changed request.",
+      "done": "A complete credential-bound presentation with explicit disclosures and all negative cases. Component tests and a narrower membership demonstration do not close this task."
+    },
+    {
+      "id": "V09",
+      "name": "Exercise privacy and common-control alternatives",
+      "state": "profile-specific implementations needed",
+      "depends": [
+        "V04",
+        "V06"
+      ],
+      "fit": "Blinded binders, pairwise relationships and intentional correlation; 007, 008, 011, 012",
+      "work": "Test binder openings, incorrect openings and repeated public commitments; test available common-control relations and counterparty-supplied linkage. Compare declared public outputs across presentations.",
+      "done": "Positive and negative fixtures for each implemented profile, plus a leakage record. Repeated commitments are identified as correlators; finite trace checks are not a proof of general unlinkability."
+    },
+    {
+      "id": "V10",
+      "name": "Verify bounded delegated authority",
+      "state": "credential/profile decision and implementation needed",
+      "depends": [
+        "V04",
+        "V05",
+        "V06"
+      ],
+      "fit": "Delegated trust-graph authority; record 020",
+      "work": "Start with a bounded monolithic profile before comparing recursion. Verify grants, acceptances, holder control, scope narrowing, depth and status. Test escalation, missing acceptance, expired/revoked hop and depth overflow.",
+      "done": "A bounded authority result with explicit chain-length disclosure. Invocation and completion remain separate; hidden length is claimed only with supporting construction analysis."
+    },
+    {
+      "id": "V11",
+      "name": "Run a real task and VTC integration",
+      "state": "adapter implementation needed",
+      "depends": [
+        "V04",
+        "V05",
+        "V06"
+      ],
+      "fit": "Use proof evidence in an actual trust-graph policy decision",
+      "work": "Use pinned Trust Tasks and OpenVTC/VTC interfaces to request, present and verify the selected proof. Identify real versus simulated services, policy outcomes, failure stages and retry behavior.",
+      "done": "A repeatable service-level exchange with no silent downgrade. If actions are added, verify durable idempotency and receipts separately from proof acceptance."
+    },
+    {
+      "id": "V12",
+      "name": "Return evidence to the book and the group",
+      "state": "per-result editorial work",
+      "depends": [
+        "V01"
+      ],
+      "fit": "Every completed or failed experiment",
+      "work": "Update only the affected option/claim with its exact artifact references, measurement conditions and limitations. Draft the corresponding book explanation and targeted discussion response. Request an independent runner and cryptographic reviewer where appropriate.",
+      "done": "A reviewable spec/book/evidence change with recorded failures, open questions and source comments. No automatic promotion to adopted or independently reproduced status."
+    }
+  ]
+}
