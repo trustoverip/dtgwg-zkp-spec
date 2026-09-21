@@ -1,4 +1,4 @@
-<!-- generated-from: records-sha256=bf44ad8d450671623b9d02589b9cf0399e4cca5abce25fca029b049b5b76254a — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
+<!-- generated-from: records-sha256=a4712e8b2dccc24a44411d77bd5a59a790adbf7fe5ec2962779f024538de6633 — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
 
 <!-- generated-section:requests:start -->
 ## Requests Answered
@@ -995,7 +995,7 @@ Rejection codes: `binder-mismatch (unsat: C does not open to the supplied taskCo
 
 #### Issuance requirements
 
-- issuers carry a committed form of the exchange citation in place of the plaintext pair — under cred-spec PR #56 that pair is `taskContext` (the initiating document's `id`) and `taskDigestMultibase` (its task digest), both durable correlators of the credential across presentations; this is a change to cred-spec §The `taskContext` Property and §The `taskDigestMultibase` Property, and the one member this record asks the credential layer for. Filed against the credential specification as its own issue on 2026-09-21 (the review asked that it be an issue the Credentials TF can schedule; PR #18 is parked and is not it)
+- issuers carry a committed form of the exchange citation in place of the plaintext pair — under cred-spec PR #56 that pair is `taskContext` (the initiating document's `id`) and `taskDigestMultibase` (its task digest), both durable correlators of the credential across presentations; this is a change to cred-spec §The `taskContext` Property and §The `taskDigestMultibase` Property, and the one member this record asks the credential layer for. Filed against the credential specification as issue #58 on 2026-09-21 (the review asked that it be an issue the Credentials TF can schedule; PR #18 is parked and is not it)
 - C is digestMultibase-encoded (WD02 D-A) so both layers agree on the encoding
 - the framework (Trust Tasks) commits to the taskContext in a form the proof can open — 'we can only blind what the framework gives us a committed form of' (ScottJeezey, cred-tf #39)
 - Specify generation, distribution and retention of the secret blinding value; do not publish it beside a low-entropy plaintext-hiding commitment.
@@ -1010,6 +1010,7 @@ Rejection codes: `binder-mismatch (unsat: C does not open to the supplied taskCo
 - cred-spec PR #50 (2026-09-12) §The identity commitment: a per-application 32-byte salt carried inside the card to vetters and never to the community; every vetter recomputes the same commitment; a fresh salt per application leaves separate applications unrelated — this record's route 1 shape with the profile's own retention caveat (a vetter who keeps a card can recognise the commitment later)
 - cred-spec PR #56 (albertoleon7794, 2026-09-17, open): `taskContext` becomes the initiating document's `id` (not the threadId) and gains `taskDigestMultibase`, the task digest of that document, taken with `proof` removed — a sixth digest-valued member, and a second plaintext correlator beside the first
 - zkp-spec PR #8 review (geoffturk, 2026-09-16, the credential maintainer's reading of the interface): this record is scoped to the trust-task binder; the five digest-valued members of cred-spec #38 are record 022; the taskContext change is to be filed against the credential specification as an issue
+- cred-spec #58 (filed 2026-09-21): a committed form of the trust-task citation — what the credential layer decides (placement, member names, encoding, retention of the blinding value, pairing with outcome evidence) and what stays here
 
 #### Record history
 
@@ -2147,6 +2148,8 @@ This section is informative. Items 1–6 are written by the editors; the numbere
 4. **Proof size as a correlator.** Proof size, timing and error surface can distinguish constructions and therefore holders. Records list proof size per option; profiles should fix one option per context so that the choice of construction does not itself disclose.
 5. **What the credential layer holds.** A construction can blind only what the credential or framework gives it in committed form. Durable correlators that live in Trust Task artefacts — identifiers, thread identifiers, the task-context pairing — are outside any construction's protection until the framework commits to them (construction 008, [DTG-CRED-TF-39]); the credential specification's digest-valued references are enumerable until their hashed representation carries a salt (construction 022, [DTG-CRED-38]).
 6. **Intentional correlation is the holder's act.** A proof of common control across identifiers (constructions 007, 012) discloses to the party it is made to and widens no identifier's declared scope. Verifiers MUST NOT infer from such a proof that the identifiers may be correlated elsewhere.
+
+> **WG-15 — Discuss: blinded digest references (record 022).** Which of the credential specification's digest-valued members carry a salt, and where the salt lives, is that specification's disposition (cred-spec #38). Record 022 states what the proof needs of each placement — a salt the proof can treat as a witness, content-binding references kept bound to exact content, chain references salted only where a chain is proven undisclosed — and its proof-side preference (a salt member inside the referenced credential). Status: record specified; disposition open on #38.
 
 <!-- generated-section:privacy:start -->
 ### Privacy claims as recorded, per construction
