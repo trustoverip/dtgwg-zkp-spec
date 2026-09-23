@@ -1,4 +1,4 @@
-<!-- generated-from: records-sha256=8cc0fe9fd857fd382d89ae2ba1b3ca40947f679335ebb7c73507288d24fd6ed1 — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
+<!-- generated-from: records-sha256=01b4e776e2a2dae7cce575a4682923a079a06d17721a1702ba29d4e0d2254b40 — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
 
 <!-- generated-section:requests:start -->
 ## Requests Answered
@@ -221,7 +221,7 @@ Identifiers are stable handles, not a type taxonomy or contiguous sequence. The 
 | [010](#construction-010-%C2%B7-community-anchored-proof-(adr-001)) | Community-Anchored Proof (ADR-001) | `specified` | P1 | 001 ∧ 002 ∧ 003 ∧ 004 ∧ 005 ∧ 006 ∧ 007 |
 | [011](#construction-011-%C2%B7-pairwise-edge-(vrc-possession%2C-directed-personas-shown%2C-pairwise-identifiers-hidden)) | Pairwise edge (VRC possession, directed personas shown, pairwise identifiers hidden) | `specified` | P2 | 003 ∧ 004 ∧ 006 ∧ 007 |
 | [012](#construction-012-%C2%B7-intentional-correlation-%E2%80%94-one-controller-across-k-credentials) | Intentional correlation — one controller across k credentials | `specified` | P2 | 003 ∧ 006 ∧ 007 |
-| [013](#construction-013-%C2%B7-mutual-edge-admissibility-%E2%80%94-each-half-admissible-under-the-other-community%E2%80%99s-policy%2C-neither-policy-nor-member-revealed) | Mutual edge admissibility — each half admissible under the other community's policy, neither policy nor member revealed | `requested` | P3 | 001 ∧ 003 |
+| [013](#construction-013-%C2%B7-mutual-edge-admissibility-%E2%80%94-each-half-admissible-under-the-other-community%E2%80%99s-policy%2C-neither-policy-nor-member-revealed) | Mutual edge admissibility — each half admissible under the other community's policy, neither policy nor member revealed | `specified` | P3 | 001 ∧ 003 ∧ 022 |
 | [020](#construction-020-%C2%B7-delegation-chain-(vdc)-%E2%80%94-agent-acts-for-a-member) | Delegation chain (VDC) — agent acts for a member | `specified` | P2 | 001 ∧ 003 ∧ 004 ∧ 006 ∧ 009 |
 | [021](#construction-021-%C2%B7-authority-chain-(vac)-%E2%80%94-an-agent-or-device-acts-as-itself-under-attenuated-authority) | Authority chain (VAC) — an agent or device acts as itself under attenuated authority | `specified` | P2 | 001 ∧ 003 ∧ 004 ∧ 006 ∧ 009 |
 | [023](#construction-023-%C2%B7-two-vouch-admission-proof-%E2%80%94-an-applicant-proves-k-%E2%89%A5-2-vouches-from-distinct-current-members-to-the-issuing-community%2C-without-disclosing-which-members) | Two-vouch admission proof — an applicant proves k ≥ 2 vouches from distinct current members to the issuing community, without disclosing which members | `specified` | P1 | 001 ∧ 003 ∧ 004 ∧ 005 ∧ 006 ∧ 007 |
@@ -1780,22 +1780,22 @@ Revisions within a state:
 
 ### Construction 013 · Mutual edge admissibility — each half admissible under the other community's policy, neither policy nor member revealed
 
-*This record is at state `requested`: the construction has been asked for and not yet written. Every line below is a placeholder until a constructor writes the record.*
+*This record is at state `specified`: it is written and validates; no runtime has measured it. Costs marked conjecture are conjecture (drafting rule 4). Informative.*
 
 | | |
 |---|---|
 | kind | composed |
-| state | `requested` |
+| state | `specified` |
 | priority | P3 |
 | constructor | mitchuski |
 | requested by | stormer78 (OpenVTC implementation, cred-spec #25) · geoffturk (WD02 restatement) — requested by the ZKP TF co-chair on the record |
 | request | cred-spec #25 (stormer78 2026-08-24: forming a cross-community edge needs both communities' policies to admit it, and neither side can learn the other's policy before publishing a half; first signal of inadmissibility is a rejection after one half is already out) · cred-spec #25 (mitchuski 2026-08-25: step one is plain published admissibility predicates, no proof machinery; the stronger form — 'my half would be admissible under the counterparty's policy' proven without revealing the policy or the member — is future work for the ZKP task force) · cred-spec #25 (geoffturk 2026-09-07: the two predicates in WD02 vocabulary — which correlation scopes a community accepts for the subject of a VRC its members publish, and whether it admits a non-member subject) |
 
-**Composes:** [001](#construction-001-%C2%B7-set-membership-over-an-accredited-root) ∧ [003](#construction-003-%C2%B7-transcript-binding) — a [[ref: composed construction]]: one transcript, one [[ref: disclosure set]], written fresh.
+**Composes:** [001](#construction-001-%C2%B7-set-membership-over-an-accredited-root) ∧ [003](#construction-003-%C2%B7-transcript-binding) ∧ [022](#construction-022-%C2%B7-blinded-digest-references-%E2%80%94-the-digest-valued-members-of-the-credential-specification%2C-unenumerable-at-rest-and-openable-in-proof) — a [[ref: composed construction]]: one transcript, one [[ref: disclosure set]], written fresh.
 
 #### Statement
 
-Placeholder at state `requested`: each party learns that the counterparty's half of a proposed cross-community edge would be admitted under this party's own community policy — subject scope and non-member admission — without learning the counterparty's identifier, membership or policy beyond the yes, and with neither half published until both answers are yes.
+Each party to a proposed cross-community edge learns that the counterparty's committed half would be admitted under this party's community's published admissibility policy — the half's form (its subject's correlation scope and whether it claims membership) is one the policy accepts, and where the form claims membership, the subject is a member of the counterparty's community — without learning the counterparty's identifier, membership or anything of its half beyond the yes; neither half is revealed until both answers are yes.
 
 **Need.** turn a failed cross-community publish into a pre-flight check that reveals nothing about either membership: each party proves its half would be admissible under the other community's published policy commitment before either half is published, and the two proofs are exchanged commit-before-reveal so that whoever goes first has not already disclosed
 
@@ -1803,39 +1803,55 @@ Placeholder at state `requested`: each party learns that the counterparty's half
 
 *Never leaves the holder.*
 
-- to be specified: this party's proposed half (identifier, declared scope, membership evidence) and the opening of its commitment; the counterparty's published policy commitment and this party's satisfying witness under it
+- the prover's proposed half — the relationship credential half it would publish (its subject identifier, declared correlation scope and membership status) — as canonical bytes, and the salt u under which it was committed (record 022)
+- the Merkle path of the half's form (correlation scope, membership claimed) to the counterparty community's policy root
+- where the form claims membership: the subject's community-issued grant and its Merkle path to the prover's own community root (record 001)
 
 #### Public inputs
 
-- to be specified: each community's published admissibility-policy commitment (the two WD02 predicates as a committed set); the commitment to each half; transcriptDigest for the exchange
+- the counterparty community's published admissibility-policy root — a commitment to the forms it accepts, the two WD02 predicates (which correlation scopes it accepts for the subject of a VRC its members publish; whether it admits a non-member subject) as a committed set
+- the prover's community membership root at a stated epoch, where the form claims membership
+- C — the commitment to the prover's half, exchanged before either proof
+- transcriptDigest — over both commitments and the exchange's challenge
 
 #### Relation
 
-1. to be specified — commit to this party's half before anything is published (commit-before-reveal ordering, cred-spec #25 question 3) — [[ref: commitment-open]]
-2. to be specified — this half's subject scope and membership status are members of the counterparty community's accepted-forms set, proven against its published policy commitment — [[ref: set-membership]] ([[ref: construction record]] 001, [Set membership over an accredited root](#construction-001-%C2%B7-set-membership-over-an-accredited-root))
-3. to be specified — bound to one exchange transcript so an admissibility answer cannot be replayed against a different half — [[ref: transcript-bind]] ([[ref: construction record]] 003, [Transcript binding](#construction-003-%C2%B7-transcript-binding))
+1. C opens to the canonical bytes of the proposed half under the salt u — the half is fixed before either party answers, and the half later revealed is the one the proof was about — [[ref: commitment-open]] ([[ref: construction record]] 022, [Blinded digest references — the digest-valued members of the credential specification, unenumerable at rest and openable in proof](#construction-022-%C2%B7-blinded-digest-references-%E2%80%94-the-digest-valued-members-of-the-credential-specification%2C-unenumerable-at-rest-and-openable-in-proof))
+2. the half's form (the subject's correlation scope, membership claimed or not) is a leaf of the counterparty community's policy root — [[ref: set-membership]] ([[ref: construction record]] 001, [Set membership over an accredited root](#construction-001-%C2%B7-set-membership-over-an-accredited-root))
+3. where the form claims membership, the subject's grant is a leaf of the prover's own community root at the stated epoch — a claimed membership is real, never merely declared — [[ref: set-membership]] ([[ref: construction record]] 001, [Set membership over an accredited root](#construction-001-%C2%B7-set-membership-over-an-accredited-root))
+4. the proof is bound to transcriptDigest over both commitments and the exchange's challenge, so an admissibility answer cannot be replayed against a different half or a different exchange — [[ref: transcript-bind]] ([[ref: construction record]] 003, [Transcript binding](#construction-003-%C2%B7-transcript-binding))
 
 #### Disclosure set
 
-- to be specified: the two yes/no answers and the transcript digest; the halves themselves only after both answers are yes
+- each direction's outcome (the counterparty's committed half has a form this community's policy accepts / not shown)
+- the two commitments C and transcriptDigest
+- the policy roots and the membership root, already published
+- the halves themselves, only after both answers are yes — a rule of the exchange, not of either proof
 
 #### Does not establish
 
-- to be specified: that the edge will be accepted once published — admissibility under a policy commitment is not acceptance by a community's verifier; that either party is a member of anything beyond what the policy predicate asked; that the policy commitment is current
+- that the edge will be accepted once published — admissibility under a policy commitment is not acceptance by a community's verifier
+- privacy of either policy — proving a form is in the counterparty's accepted set needs that set's path, so the policies are published (the request's step one); hiding a policy from prospective counterparties is not addressed
+- fairness — after both answers are yes, nothing compels a party to reveal its half; a party can learn the yes and walk away (the formal model's no_fairness)
+- that the half's declared correlation scope is honest beyond the form — a non-member form proves nothing about the subject, and the scope is the prover's declaration inside its own committed half
+- that the policy root is current beyond the stated epoch or version
+- that either party is a member of anything beyond what the policy's form asked
 
 #### Adversary, per claim
 
-- **verifier** — to be specified: the counterparty learns only the admissibility answer, not the half, the identifier or the membership behind it
+- **verifier** — the counterparty learns that this party's half has a form its policy accepts, not the half, its subject identifier or the membership behind it — holds while C is hiding (the salt u) and while the policy accepts more than one form; a policy that accepts exactly one form turns yes into the form
+- **verifier** — a party that answers first cannot be met by a counterparty that re-commits to a different half after seeing the answer — commitments are frozen once an answer exists (the formal model's commit_frozen)
 
 #### Horizon
 
-- to be specified: the validity of each community's published policy commitment; the exchange transcript's challenge
+- earliest of: each community's policy root version, the prover's membership root epoch, and the exchange challenge
+- the exchange itself: an unanswered exchange expires with its challenge; a new exchange needs new commitments
 
 #### Conformance fixtures
 
-Families: `accepts` · `rejects-unsat`
+Families: `accepts` · `rejects-unsat` · `rejects-verify`
 
-Rejection codes: `half-inadmissible (unsat: the half's form is not in the counterparty's accepted set)`
+Rejection codes: `half-inadmissible (unsat: the half's form is not a leaf of the counterparty's policy root)`, `membership-unproven (unsat: the form claims membership and no grant leaf exists under the prover's root)`, `commitment-mismatch (unsat: C does not open to the half the proof reads)`, `transcript-digest-mismatch (verify: the proof was made for another exchange)`, `answer-before-commitments (exchange: refused until both commitments are in)`, `reveal-before-both-yes (exchange: refused)`, `recommit-after-answer (exchange: refused)`
 
 #### Construction options
 
@@ -1844,11 +1860,14 @@ Rejection codes: `half-inadmissible (unsat: the half's form is not in the counte
 | construction | cost | status | source |
 |---|---|---|---|
 | step one, no proof — the two predicates published as discoverable fields on the community profile (the proposed answer on #25; reveals nothing about membership) | zero; a pre-flight read | unmeasured | cred-spec #25 proposed answer · geoffturk 2026-09-07 WD02 restatement |
-| to be specified — membership of the half's form in a committed policy set, exchanged commit-before-reveal | unmeasured | unmeasured | cred-spec #25 (mitchuski 2026-08-25): 'mutual admissibility as a zero-knowledge predicate' |
+| Groth16 / BN254 / Poseidon composition — the lab's membership circuit (record 001) against the policy root and, where claimed, the membership root, with a Poseidon commitment opening (record 022) and transcript binding (record 003); the exchange runs outside the circuit | unmeasured | unmeasured | this record's clauses over the lab's components; record 001's runtime |
 
 #### Issuance requirements
 
-- to be specified: a community publishes its admissibility predicates as a commitment the proof can open against (the registry-ZK interaction the credential specification leaves to this task force)
+- a community publishes its admissibility predicates as a Merkle root over the forms it accepts (correlation scope × membership status), per policy version — the registry-ZK interaction the credential specification leaves to this task force
+- the tree hashes forms and internal nodes under separate domains, or every path has the tree's fixed depth (record 001's requirement)
+- the proposed half's canonical bytes are committed with a fresh salt before the exchange (record 022's route 1)
+- the exchange runs in order — both commitments, then the proofs, then revelation only after both answers are yes; no commitment changes once an answer exists
 
 #### Provenance
 
@@ -1862,6 +1881,29 @@ Rejection codes: `half-inadmissible (unsat: the half's form is not in the counte
 | date | to | by | evidence |
 |---|---|---|---|
 | 2026-09-11 | `requested` | mitchuski (on cred-spec #25, 2026-08-25) — requested by stormer78's issue and geoffturk's 2026-09-07 restatement | cred-spec #25: 'There is a stronger form the ZKP task force can carry as future work: proving my half would be admissible under the counterparty's policy without revealing the policy or the member' — placed on the request register 2026-09-11 (open item D23); every field above is a placeholder until specified |
+| 2026-09-23 | `specified` | mitchuski | statement, witness, public inputs, four clauses composed from 001 · 003 · 022, disclosure set, six doesNotEstablish lines (policy privacy and fairness named), two adversary claims, horizon, seven rejection codes (three for the exchange), two options, four issuance lines; formal model of one direction and of the exchange ordering |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Composed/R013.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: Formal.R013.Accepts for one direction; the exchange as a state machine (Formal.R013.step, Safe)
+- scope: clauses 1–3 as a model and the exchange ordering; clause 4 (transcript) is record 003's; the commitment's hiding and the policy's privacy are outside the model
+
+| theorem | proves |
+|---|---|
+| `Formal.R013.soundness` | clauses 1–3: the committed half is the one whose form was proven, the form is a leaf of the counterparty's policy tree, and a claimed membership is a leaf of the prover's tree (records 022 and 001 twice) |
+| `Formal.R013.exchange_safe` | over any sequence of events, a half is revealed only after both answers are yes, and no answer exists before both commitments |
+| `Formal.R013.commit_frozen` | no commitment changes once an answer exists |
+| `Formal.R013.no_fairness` | does-not-establish 3: after both yes answers the exchange can stop with nothing revealed |
+
+| hypothesis | carries |
+|---|---|
+| H-digest (record 022) | clause 1: the commitment is collision-free over (bytes, salt) |
+| H-leaf, H-node, H-domain (record 001) | clauses 2 and 3: both trees' hashes are collision-free, leaves and nodes under separate domains |
 
 
 ### Construction 020 · Delegation chain (VDC) — agent acts for a member
@@ -2873,7 +2915,8 @@ This section is informative. Items 1–6 are written by the editors; the numbere
 - **Construction 011** — against verifier, verifiers-colluding: pairwise identifiers hidden; no cross-presentation correlator minted by the linkage itself
 - **Construction 012** — against verifier, verifiers-colluding: no identifier beyond the disclosed set, and no cross-presentation handle: two verifiers shown different subsets cannot join them through this proof
 - **Construction 012** — against issuer-verifier-colluding, registry-operator: the issuer of any one credential in the show learns nothing about the others from the proof; the revocation-state fetch must not be a per-holder query (record 006 C3)
-- **Construction 013** — against verifier: to be specified: the counterparty learns only the admissibility answer, not the half, the identifier or the membership behind it
+- **Construction 013** — against verifier: the counterparty learns that this party's half has a form its policy accepts, not the half, its subject identifier or the membership behind it — holds while C is hiding (the salt u) and while the policy accepts more than one form; a policy that accepts exactly one form turns yes into the form
+- **Construction 013** — against verifier: a party that answers first cannot be met by a counterparty that re-commits to a different half after seeing the answer — commitments are frozen once an answer exists (the formal model's commit_frozen)
 - **Construction 020** — against verifier, verifiers-colluding: principal hidden under the selected proof assumptions and declared disclosure, against the verifier and colluding verifiers; hiding chain length additionally requires validated padding/fixed shape and metadata analysis, which are not established here
 - **Construction 021** — against verifier, verifiers-colluding: no ancestor identifier is disclosed — the verifier learns the leaf's authority, not who equipped the presenter or through whom; against colluding verifiers the chain contributes no cross-presentation handle beyond what the presenter discloses of itself
 - **Construction 021** — against registry-operator: the status check on links that carry `credentialStatus` does not identify the presenter or the chain when rl_root is fetched without a per-chain query; the root-status timing leak of item 14 is stated, not hidden
@@ -2902,7 +2945,7 @@ This section is informative. Items 1–6 are written by the editors; the numbere
 - **Construction 010** does not establish: that the voucher endorses this request — a VRC is standing, not per-request; S5 binds the proof, not the relationship; that the presenter is one natural person (that is PR-UNQ in a different context, record 002 under its own declaration); that C's admission decision for either member was correct (assurance boundary — accreditation carries assurance); …
 - **Construction 011** does not establish: any community-level assurance (that is record 010); that the personas are distinct natural persons; the relationship's content beyond what the statement discloses; …
 - **Construction 012** does not establish: that the presenter is one natural person (k credentials, one secret: an agent holding a person's secret satisfies every clause — record 002 under its own declaration establishes uniqueness); anything about credentials not in the show: intentional correlation is declared per presentation and does not widen any identifier's declared scope; that the communities involved consented to be named together — the disclosure is the holder's; …
-- **Construction 013** does not establish: to be specified: that the edge will be accepted once published — admissibility under a policy commitment is not acceptance by a community's verifier; that either party is a member of anything beyond what the policy predicate asked; that the policy commitment is current
+- **Construction 013** does not establish: that the edge will be accepted once published — admissibility under a policy commitment is not acceptance by a community's verifier; privacy of either policy — proving a form is in the counterparty's accepted set needs that set's path, so the policies are published (the request's step one); hiding a policy from prospective counterparties is not addressed; fairness — after both answers are yes, nothing compels a party to reveal its half; a party can learn the yes and walk away (the formal model's no_fairness); …
 - **Construction 020** does not establish: that the principal authorised this specific act (grant ≠ invocation — the invocation is a trust-task artifact); the principal's identity; that the agent is not also acting for others; …
 - **Construction 021** does not establish: that the presenter is someone the scope will deal with — a valid chain establishes narrowing by parties entitled to narrow, not that the leaf subject independently qualifies; that is the governing party's policy call (§Attenuation) and clause 7 is present only where the policy asks for it; delegation: the presenter acts as itself, and nothing here appoints it to act in anyone's name (§Authority is not delegation — that is record 020); that the governing party's own permission to govern S is current beyond 'accredited under root_G at the stated state'; …
 - **Construction 022** does not establish: that the referenced credential is currently valid, unrevoked or accepted (record 006; the enclosing record's own clauses); that the party issuing the referencing credential was entitled to reference that credential — an acknowledgement by a non-member, an acceptance by the wrong delegate, a witness with no standing: governance and the enclosing record decide that, not the opening; unlinkability of presentations that show the same salted digest (route 1): hiding the plaintext behind a salt stops enumeration and nothing else; a stable visible reference still links every presentation of the referencing credential, exactly as record 008 says of a visible commitment C; …
