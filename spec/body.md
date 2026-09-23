@@ -1,4 +1,4 @@
-<!-- generated-from: records-sha256=c5b5a1856566687cdc987ffb4f34c5069685945fc95d42b6e572d56b8deef0ca — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
+<!-- generated-from: records-sha256=8cc0fe9fd857fd382d89ae2ba1b3ca40947f679335ebb7c73507288d24fd6ed1 — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
 
 <!-- generated-section:requests:start -->
 ## Requests Answered
@@ -197,7 +197,7 @@ This section is generated from the machine-readable records in `conformance/reco
 
 ### Index of constructions
 
-Identifiers are stable handles, not a sequence: 001–009 are primitive constructions; 010–019 are compositions over community and relationship credentials; 020–029 are delegation and authority chains. Unused numbers in a range are unassigned, not missing.
+Identifiers are stable handles, not a type taxonomy or contiguous sequence. The kind column identifies primitives and compositions. Records 020 and 021 concern chains, 022 is a digest-reference primitive, and 023 and 024 concern admission; unassigned numbers are not missing records.
 
 **Primitive constructions** — one gadget each.
 
@@ -225,6 +225,7 @@ Identifiers are stable handles, not a sequence: 001–009 are primitive construc
 | [020](#construction-020-%C2%B7-delegation-chain-(vdc)-%E2%80%94-agent-acts-for-a-member) | Delegation chain (VDC) — agent acts for a member | `specified` | P2 | 001 ∧ 003 ∧ 004 ∧ 006 ∧ 009 |
 | [021](#construction-021-%C2%B7-authority-chain-(vac)-%E2%80%94-an-agent-or-device-acts-as-itself-under-attenuated-authority) | Authority chain (VAC) — an agent or device acts as itself under attenuated authority | `specified` | P2 | 001 ∧ 003 ∧ 004 ∧ 006 ∧ 009 |
 | [023](#construction-023-%C2%B7-two-vouch-admission-proof-%E2%80%94-an-applicant-proves-k-%E2%89%A5-2-vouches-from-distinct-current-members-to-the-issuing-community%2C-without-disclosing-which-members) | Two-vouch admission proof — an applicant proves k ≥ 2 vouches from distinct current members to the issuing community, without disclosing which members | `specified` | P1 | 001 ∧ 003 ∧ 004 ∧ 005 ∧ 006 ∧ 007 |
+| [024](#construction-024-%C2%B7-hidden-vetting-admission-%E2%80%94-an-applicant-proves-k-attestations-from-pairwise-distinct-eligible-vetters-of-the-issuing-community%2C-without-disclosing-which-vetters) | Hidden-vetting admission — an applicant proves k attestations from pairwise-distinct eligible vetters of the issuing community, without disclosing which vetters | `constructed` | P1 | 001 ∧ 002 ∧ 003 ∧ 004 ∧ 005 |
 
 ### Construction 001 · Set membership over an accredited root
 
@@ -307,6 +308,7 @@ Rejection codes: `root-unknown`, `path-invalid`
 #### Issuance requirements
 
 - issuer publishes a ZK-friendly commitment per member (Poseidon leaf) or an accumulator
+- the membership tree hashes leaves and internal nodes under separate domains, or every membership path has the tree's fixed depth (the lab's depth 20) — with neither, an internal node's preimage passes as a leaf (the formal model's counter-deployment `no_domain_second_preimage`)
 
 #### Provenance
 
@@ -323,6 +325,35 @@ Rejection codes: `root-unknown`, `path-invalid`
 | 2026-08-28 | `requested` | mitchuski | zkp-tf #18 (talltree 08-26 / Scott 08-27): seed set for the board |
 | 2026-08-28 | `specified` | mitchuski | runtimes/01-uniqueness-nullifier NOTES + decision §13 |
 | 2026-08-28 | `constructed` | mitchuski | circom-gadget nullifier_membership 10/10, numbers in CIRCUITS.md |
+
+Revisions within a state:
+
+| date | by | note |
+|---|---|---|
+| 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+| 2026-09-23 | mitchuski | issuance requirement added from the formal model: leaf/node domain separation or a fixed path depth; no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Gadgets/P001Membership.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: Formal.Gadgets.pathRoot over Formal.Gadgets.MTree — the membership clause as a Merkle path recomputation from the leaf hash to the root
+- scope: the membership clause over abstract hashes; not the hash function's collision resistance, and not which registry state the root is (that the verifier recognises the root is registry policy)
+
+| theorem | proves |
+|---|---|
+| `path_sound` | a path that hashes the leaf to the root proves the leaf is in the tree |
+| `path_complete` | every leaf of the tree has such a path |
+| `path_sound_fixed_depth` | for a tree of uniform depth d and a path of exactly d steps, soundness holds without leaf/node domain separation — the lab circuit's shape (depth 20) |
+| `no_domain_second_preimage` | with variable-length paths and no domain separation, an internal node passes as a leaf (the second-preimage shape): the defence is required, not optional |
+
+| hypothesis | carries |
+|---|---|
+| H-leaf, H-node | the leaf and node hashes are collision-free (modelled as injective) |
+| H-domain or fixed depth | no leaf hash equals a node hash, or every path has the tree's fixed depth — one of the two must hold of the circuit (to discharge at the circuit gate) |
 
 
 ### Construction 002 · Scoped nullifier (reuse detection)
@@ -419,6 +450,35 @@ Rejection codes: `nullifier-reused`, `context-descriptor-mismatch`
 | 2026-08-28 | `requested` | mitchuski | zkp-tf #18 (talltree 08-26 / Scott 08-27): seed set for the board |
 | 2026-08-28 | `specified` | mitchuski | decision §13 + O2 PHC-by-nullifier |
 | 2026-08-28 | `constructed` | mitchuski | same circuit as 001; scoped preimage tested 9/9 in runtime 01 |
+
+Revisions within a state:
+
+| date | by | note |
+|---|---|---|
+| 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Gadgets/P002Nullifier.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: Formal.Gadgets.NullifierRel — some secret behind this leaf gives this nullifier in this context
+- scope: reuse detection over abstract hashes; unlinkability across contexts is a computational claim outside this model; does-not-establish 2 is governance
+
+| theorem | proves |
+|---|---|
+| `one_leaf_one_nullifier` | one leaf has one nullifier per context |
+| `reuse_refused` | nullifier-reused: once a leaf's nullifier is spent in a context, a second presentation of that leaf there is refused |
+| `unbound_nullifier_unsound` | the same-secret clause is necessary: a nullifier taken from any secret lets one leaf yield two nullifiers in one context |
+| `cross_context_not_detected` | does-not-establish 3: one secret gives different nullifiers in different contexts — no cross-context detection |
+| `one_person_two_nullifiers` | does-not-establish 1: one person enrolled twice gives two accepted nullifiers in one context |
+
+| hypothesis | carries |
+|---|---|
+| H-leaf | the leaf commitment binds its secret (modelled as injective) — carries the same-secret clause |
+| spent set | the verifier keeps the context's spent nullifiers (Formal.Gadgets.Spent) |
 
 
 ### Construction 003 · Transcript binding
@@ -522,6 +582,26 @@ Revisions within a state:
 | date | by | note |
 |---|---|---|
 | 2026-09-14 | mitchuski | cred-spec #52 (predicate registry): negative-space line — binding an identifier does not make it accepted or meaningful; probe cited in provenance. State unchanged (constructed). |
+| 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Gadgets/P003Transcript.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: the proof's public transcript scalar; H-bind states that a verifying proof was made for the scalar it verifies against
+- scope: binding of the scalar only; canonical encoding, audience, freshness and replay policy are the profile's (does-not-establish 1, 2, 5, 6, 7 out of scope by construction; the replay remedy is a verifier spent set)
+
+| theorem | proves |
+|---|---|
+| `swap_fails` | a proof moved to another transcript scalar fails |
+| `digest_reduction_collides` | the 256-bit digest reduced mod the BN254 scalar prime is not injective (0 and r collide): the proof binds the scalar, and the scalar stands for one request only through the digest's collision resistance — does-not-establish 3 made exact |
+
+| hypothesis | carries |
+|---|---|
+| H-bind | soundness of the proof system with the transcript scalar as a public input |
 
 
 ### Construction 004 · Holder binding (key from secret)
@@ -612,6 +692,31 @@ Rejection codes: `key-not-derived-from-secret`
 |---|---|---|---|
 | 2026-08-28 | `requested` | mitchuski | zkp-tf #18 (talltree 08-26 / Scott 08-27): seed set for the board |
 | 2026-08-28 | `specified` | mitchuski | runtimes/04-holder-binding STUB.md + paper §7.2 languages |
+
+Revisions within a state:
+
+| date | by | note |
+|---|---|---|
+| 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Gadgets/P004HolderBinding.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: Formal.Gadgets.HolderRel — pk = PRF(s, context) for an s the credential commitment opens to
+- scope: derivation from the credential secret; non-transfer, coercion and sharing (does-not-establish 1, 2) are out of scope by construction — the relation reads a secret and names no party
+
+| theorem | proves |
+|---|---|
+| `key_from_credential_secret` | every opening of the credential's commitment gives the same presentation key: the key is derived from the secret the credential was issued to |
+| `unbound_key_unsound` | the commitment clause is necessary: without it a key from any secret passes |
+
+| hypothesis | carries |
+|---|---|
+| H-com | the credential commitment is binding (modelled as injective in (secret, randomness)) |
 
 
 ### Construction 005 · Distinct member / distinct issuer
@@ -705,6 +810,34 @@ Rejection codes: `duplicate-issuer-unsatisfiable`, `duplicate-seat-unsatisfiable
 | 2026-08-28 | `specified` | mitchuski | X8 + dual_issuer design |
 | 2026-08-28 | `constructed` | mitchuski | dual_issuer 7/7, guardian 8/8; duplicate = no witness |
 
+Revisions within a state:
+
+| date | by | note |
+|---|---|---|
+| 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Gadgets/P005Distinct.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: the inverse constraint (a − b) · inv = 1 over the circuit field Fin n; and Formal.Gadgets.owners_distinct, the k-ary form composed records use
+- scope: unsatisfiability of the duplicate case, proved without cryptographic assumption; independence and honesty (does-not-establish 1, 2) are declarations outside any clause
+
+| theorem | proves |
+|---|---|
+| `inverse_unsat_on_equal` | the duplicate case has no witness: (a − b) · inv ≠ 1 when a = b |
+| `FinOps` | the three field facts the gadget needs hold for Fin n, n > 1 — so for the BN254 scalar field outright |
+| `owners_distinct` | pairwise-distinct values, each owned under a one-value-per-owner rule, come from as many pairwise-distinct owners (record 024's soundness is an instance) |
+| `distinct_leaves_not_distinct_persons` | does-not-establish 3: distinct leaves held by one person |
+
+| hypothesis | carries |
+|---|---|
+| one value per owner | the issuer's enrolment gives each member one leaf — carries owners_distinct |
+| inverse exists when a ≠ b | completeness of the constraint needs n prime; not proved here (circuit gate) |
+
 
 ### Construction 006 · Non-revocation against a status root
 
@@ -783,6 +916,7 @@ Rejection codes: `rl-root-stale`, `handle-revoked`
 #### Issuance requirements
 
 - registry publishes rl_root per epoch, fetchable without identifying the fetcher (X4)
+- the registry commits rl_root over strictly sorted handles — adjacent neighbours prove a handle absent only over a sorted list; over an unsorted one they can bracket a handle that is present (the formal model's counter-deployment `unsorted_neighbours_unsound`)
 
 #### Provenance
 
@@ -798,6 +932,34 @@ Rejection codes: `rl-root-stale`, `handle-revoked`
 |---|---|---|---|
 | 2026-08-28 | `requested` | mitchuski | zkp-tf #18 (talltree 08-26 / Scott 08-27): seed set for the board |
 | 2026-08-28 | `specified` | mitchuski | O4 + X6 explorations; ADR-001 C-clauses |
+
+Revisions within a state:
+
+| date | by | note |
+|---|---|---|
+| 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+| 2026-09-23 | mitchuski | issuance requirement added from the formal model: rl_root over strictly sorted handles; no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Gadgets/P006NonRevocation.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: Formal.Gadgets.Sorted and adjacent neighbours lo < h < hi in the committed revocation list
+- scope: non-membership against the committed list; the registry's decision and live-lookup behaviour (does-not-establish 2, 3) are out of scope
+
+| theorem | proves |
+|---|---|
+| `neighbours_sound` | two adjacent entries of a strictly sorted list bracketing h prove h is not in the list |
+| `unsorted_neighbours_unsound` | sortedness is necessary: on an unsorted list adjacent neighbours bracket a present handle |
+| `stale_root_passes` | does-not-establish 1: a handle revoked after the epoch still passes against the epoch's list |
+
+| hypothesis | carries |
+|---|---|
+| H-sorted | the registry commits rl_root over strictly sorted leaves — a registry obligation, not a proof property |
+| neighbour membership | the two neighbours are leaves under rl_root: record 001's clause, applied twice |
 
 
 ### Construction 007 · Common control across identifiers
@@ -912,6 +1074,34 @@ Revisions within a state:
 |---|---|---|
 | 2026-09-11 | mitchuski | cred-spec #9 (2026-09-10): statement widened to identifiers held as subject or issuer; the '#31 four dependants' line narrowed — the VDC/VAC chain predicates are hidden-value equality (new record 009), not common control; candidate requirement sentence and the VRC-carried issuer linkage MAY recorded as issuance lines. State unchanged. |
 | 2026-09-21 | mitchuski | Review of 2026-09-16 (credential maintainer): the commitment's home stated as a task-force preference (DID-document verification method; credential member only as fallback); the requirement sentence conditioned on a key profile rather than on universal derivation; the WD02 example set found unable to satisfy this record as it stands (Ed25519 `did:key` cannot carry the commitment) — WG-14. Citations by section title. State unchanged. |
+| 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Gadgets/P007CommonControl.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: Formal.Gadgets.CommonControl — one secret behind both identifiers under the derivation
+- scope: one secret behind two identifiers; one natural person, validity, intent, the counterparty's control and the chain predicate (does-not-establish 1–6) are out of scope by construction — the clause reads a secret
+
+| theorem | proves |
+|---|---|
+| `distinct_secrets_unsat` | co-control-unproven: identifiers minted from different secrets have no witness |
+| `common_control_complete` | identifiers minted from one secret always satisfy the clause |
+
+| hypothesis | carries |
+|---|---|
+| H-com | the derivation binds (secret, salt) (modelled as injective) |
+
+#### Reviews
+
+Recorded reviewer sign-off on this record's clauses; a review is not a state advance and confers no evidence state.
+
+| date | reviewer | scope | verdict | evidence |
+|---|---|---|---|---|
+| 2026-09-23 | Denys Popov (DenisPopov15) | clause 1's key-profile condition and the WG-14 finding | `refined` | PR #11 review on conformance/records/007.json: an Ed25519 did:key has no space for the commitment; did:peer (numalgo 2 and 4), did:web and did:webvh — and other methods with anchoring — can carry one |
 
 
 ### Construction 008 · Blinded binder (taskContext hiding; presentation correlation unresolved)
@@ -1028,6 +1218,26 @@ Revisions within a state:
 | 2026-09-11 | mitchuski | Provenance: the 8 September call's same-context pseudonym caveat recorded against route 2. State unchanged. |
 | 2026-09-13 | mitchuski | Provenance: cred-spec PR #50's salted identity commitment recorded as an instance of route 1, with its retention caveat. State unchanged. |
 | 2026-09-21 | mitchuski | Review of 2026-09-16: witness and issuance re-read against cred-spec PR #56 (initiating-document id + task digest); the #38 digest members moved to their own record, 022; the taskContext ask filed as a credential-specification issue. State unchanged. |
+| 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Gadgets/P008Binder.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: Formal.Gadgets.BinderRel — the commitment C opens to the taskContext (route 1)
+- scope: route 1 only; route 2 (context pseudonym) is proposed and unmodelled; completion, plaintext custody and outcome status (does-not-establish 2–4) are out of scope
+
+| theorem | proves |
+|---|---|
+| `binder_opens_once` | binder-mismatch: one commitment opens to one taskContext |
+| `visible_value_links` | does-not-establish 1 (the open design requirement): a shown value depending only on the credential is equal in every presentation, so equality correlates them — hiding the plaintext does not change that |
+
+| hypothesis | carries |
+|---|---|
+| H-com | the commitment binds (taskContext, salt) (modelled as injective) |
 
 
 ### Construction 009 · Hidden-value equality across credentials
@@ -1126,6 +1336,30 @@ Rejection codes: `hidden-values-differ (unsat: the two openings are not equal)`,
 |---|---|---|---|
 | 2026-09-10 | `requested` | geoffturk / stormer78 (cred-spec #9, PR #42) | cred-spec #9 comment 2026-09-10T11:40Z: 'the VDC and VAC chain predicates are not this primitive … name the chain predicates separately'; PR #42 editor's note lists the three predicates |
 | 2026-09-11 | `specified` | mitchuski | specified from the merged VDC/VAC chain rules and the shared-subject rule; bound to the new `hidden-equality` gadget (the dual of record 005's distinctness); cost lines labelled conjecture per drafting rule 4 — DRAFT for review, drop to requested if the task force prefers to bind this to commitment-open |
+
+Revisions within a state:
+
+| date | by | note |
+|---|---|---|
+| 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Gadgets/P009HiddenEquality.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: the constraint field_a − field_b = 0 over the circuit field Fin n
+- scope: the equality clause alone; common control, authenticity, intent and meaning (does-not-establish 1–4) are out of scope by construction — the clause compares two witnesses
+
+| theorem | proves |
+|---|---|
+| `sub_zero_iff_eq` | a − b = 0 exactly when a = b in Fin n, any n > 0 — the constraint is equality, both ways, without primality |
+
+| hypothesis | carries |
+|---|---|
+| authenticated openings | the compared fields are the openings the enclosing record's signature-verify or membership clauses bind — carried by the enclosing record |
 
 
 ### Construction 010 · Community-Anchored Proof (ADR-001)
@@ -1269,6 +1503,29 @@ Revisions within a state:
 | 2026-09-11 | mitchuski | 8 September call and merged WD02 text: blind-signature vouch added as a construction option (conjecture; source = the call); provenance cites the merged §Community-Anchored ZKP whose SHOULD/SHOULD NOT on statement 3 matches this record's negative space. State unchanged. |
 | 2026-09-13 | mitchuski | cred-spec PR #50 (vetting as a statement predicate, superseding #49): negative-space line — vetting evidence is not the voucher linkage; three fixture requirements recorded as rejection codes without vectors; provenance. State unchanged. |
 | 2026-09-21 | mitchuski | Review of 2026-09-16: the credential maintainer's answer to question 2 of #23 recorded; the example set's Ed25519 `did:key` identifiers found unable to carry the commitment record 007 requires (WG-14). Citations by section title. State unchanged. |
+| 2026-09-23 | mitchuski | formal model built (Lean, composed from the gadget library); no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Composed/R010.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: Formal.R010.Accepts and soundness — two distinct members, both grants under the membership root, every handle unrevoked, a VRC from the voucher over the presenter's key
+- scope: clauses 1–5 and 7; the presentation key (clause 6), the nullifier (clause 8) and the transcript (clause 9) are records 004, 002 and 003; distinct controllers from unequal leaves (does-not-establish 9) is record 005's negative space
+
+| theorem | proves |
+|---|---|
+| `Formal.R010.soundness` | clauses 1–5 and 7 as gadget relations establish two distinct current members related by a VRC (record 001 twice, record 006 per handle) |
+| `Formal.R010.self_vouch_unsat` | the rejection code self-vouch: one member leaf in both roles is never accepted (contrast record 023) |
+
+| hypothesis | carries |
+|---|---|
+| H-sig | clause 1: a verifying VRC is one the voucher issued over the presenter's key |
+| H-leaf, H-node, H-domain (record 001) | the membership tree's hashes are collision-free and leaves and nodes are hashed under separate domains |
+| H-sorted (record 006) | the revocation root is committed over strictly sorted handles |
+| H-com (record 007) | the identifier derivation binds (secret, salt) |
 
 
 ### Construction 011 · Pairwise edge (VRC possession, directed personas shown, pairwise identifiers hidden)
@@ -1375,6 +1632,27 @@ Revisions within a state:
 |---|---|---|
 | 2026-09-05 | mitchuski | WD02 vocabulary; co-control routed through record 007 — re-specified, state unchanged |
 | 2026-09-21 | mitchuski | Review of 2026-09-16: the record's implicit answers to cred-spec #9's first two questions made explicit in provenance and stated on the thread; the counterparty-attestation asymmetry noted. State unchanged. |
+| 2026-09-23 | mitchuski | formal model built (Lean, composed from the gadget library); no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Composed/R011.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: clauses 2 and 3 composed: the presenter's key (record 004) and the persona ↔ pairwise linkage (record 007)
+- scope: the composition of clauses 2 and 3; the VRC signature (1), revocation (4) and transcript (5) are records' own gadgets; the counterparty's linkage rests on its attestation
+
+| theorem | proves |
+|---|---|
+| `Formal.R011.key_behind_persona` | the presenter's key is derived from the secret behind the disclosed persona, not only the hidden pairwise identifier |
+| `Formal.R011.persona_linkage_needed` | without clause 2 the key check says nothing about the persona |
+
+| hypothesis | carries |
+|---|---|
+| H-com (record 007) | the identifier derivation binds (secret, salt) |
+| H-sig | clause 1: the VRC verifies under the issuing pairwise identifier's key (not modelled here) |
 
 
 ### Construction 012 · Intentional correlation — one controller across k credentials
@@ -1472,6 +1750,32 @@ Rejection codes: `co-control-unproven`, `handle-revoked`, `show-not-declared (li
 |---|---|---|---|
 | 2026-08-29 | `requested` | talltree (cred-spec #22) | cred-spec #22 comment 2026-08-29T22:40Z: 'it reduces the set of ZK proofs needed for intentional correlation … the ZK proof simply needs to prove the same person controls the DIDs' |
 | 2026-09-05 | `specified` | mitchuski | composed from 007 + 006 + 003 under one transcript; disclosure set and negative space written fresh (composition rule) |
+
+Revisions within a state:
+
+| date | by | note |
+|---|---|---|
+| 2026-09-23 | mitchuski | formal model built (Lean, composed from the gadget library); no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Composed/R012.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: clause 1: k − 1 common-control clauses against identifier_1
+- scope: clause 1; non-revocation (2) and the transcript (3) are records 006 and 003
+
+| theorem | proves |
+|---|---|
+| `Formal.R012.star_to_clique` | with H-com and k ≥ 2, the k − 1 clauses give every pair of the k identifiers one controller |
+| `Formal.R012.star_without_binding_not_clique` | without a binding derivation they do not — the record's 'sharing one witness' carries the statement then |
+
+| hypothesis | carries |
+|---|---|
+| H-com (record 007) | the identifier derivation binds (secret, salt) |
+| k ≥ 2 | at k = 1 there is no clause and nothing establishes a secret behind identifier_1 |
 
 
 ### Construction 013 · Mutual edge admissibility — each half admissible under the other community's policy, neither policy nor member revealed
@@ -1678,6 +1982,32 @@ Revisions within a state:
 | date | by | note |
 |---|---|---|
 | 2026-09-11 | mitchuski | Door D17 — re-read against the merged VDC text (cred-spec main, 2026-09-06/10): depth restated as the per-ancestor bound; the issuer-equals-parent-subject clause added and bound to record 009 (hidden-value equality); `credentialStatus` corrected — conditional on every VDC, not only chained ones; issuance and provenance now cite the merged sections; three negative-space lines added (intended-party check, invocation demonstration, chain length). State unchanged. |
+| 2026-09-23 | mitchuski | formal model built (Lean, composed from the gadget library); no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Chains/Records.lean (with Presentation.lean and Gadgets/ChainResolve.lean) in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: Formal.Chains.Statement with the root's own depth — the act conferred and unexpired at every hop, depth within the root, every issuer its parent's subject, the root's issuer a member, no hop revoked
+- scope: clauses 1–4 and 6; the agent's key (5) and the transcript (7) are records 004 and 003; chain-length hiding is a profile property
+
+| theorem | proves |
+|---|---|
+| `Formal.Chains.r020_soundness` | the local per-hop checks establish the global statement |
+| `Formal.Chains.escalation_unsat` | the rejection code scope-escalation: a hop that does not confer the act makes the chain unacceptable |
+| `Formal.Chains.linked_of_constraint` | clause 2: the in-circuit constraint issuer − subject = 0 is equality (record 009) |
+| `Formal.Gadgets.leaf_act_all` | clause 1: checking the act at the leaf gives it at every hop |
+| `Formal.Gadgets.depth_within_every_ancestor` | clause 1: no hop lies more than n steps below any ancestor bearing n |
+| `Formal.Gadgets.no_decrement_unbounded` | clause 1: without 'a child bears at most n − 1' a chain runs deeper than its root allows |
+
+| hypothesis | carries |
+|---|---|
+| H-sig | clause 3: each hop's countersignature verifies |
+| H-leaf, H-node, H-domain (record 001) | the membership tree's hashes are collision-free and leaves and nodes are hashed under separate domains |
+| H-sorted (record 006) | the revocation root is committed over strictly sorted handles |
 
 
 ### Construction 021 · Authority chain (VAC) — an agent or device acts as itself under attenuated authority
@@ -1798,6 +2128,36 @@ Rejection codes: `action-not-conferred (unsat: X absent from the leaf's actions)
 | 2026-09-10 | `requested` | stormer78 / geoffturk (cred-spec PR #29 → #42) | cred-spec PR #42 merged 2026-09-10: the VAC chain predicate listed as waiting on the ZKP task force; cred-spec #9 2026-09-10 names it separately from common control |
 | 2026-09-11 | `specified` | mitchuski | specified from the merged §VAC rules (attenuation, invocation, withdrawal, shared subject) as a sibling of record 020; composition and negative space written fresh; every cost line conjecture — DRAFT for review |
 
+Revisions within a state:
+
+| date | by | note |
+|---|---|---|
+| 2026-09-23 | mitchuski | formal model built (Lean, composed from the gadget library); no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Chains/Records.lean (with Presentation.lean and Gadgets/ChainResolve.lean) in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: Formal.Chains.Statement with the depth ceiling 8, plus clause 7's leaf membership where the governing party requires it
+- scope: clauses 1–4, 6 and 7; the presenter's key (5) and the transcript (8) are records 004 and 003; distinct controllers along the chain (does-not-establish 7) are outside any clause
+
+| theorem | proves |
+|---|---|
+| `Formal.Chains.r021_soundness` | the local per-link checks establish the global statement, and the leaf subject's membership where required |
+| `Formal.Chains.r021_ceiling_unsat` | the rejection code depth-ceiling-exceeded: more than 8 links is never accepted, whatever maxAttenuation says |
+| `Formal.Chains.escalation_unsat` | the rejection code action-not-conferred |
+| `Formal.Chains.linked_of_constraint` | clause 2: the in-circuit constraint issuer − subject = 0 is equality (record 009) |
+| `Formal.Gadgets.scope_within_every_ancestor` | clause 1: no link widens its parent's scope, across the whole chain |
+
+| hypothesis | carries |
+|---|---|
+| H-sig | clause 3: every link's signature verifies over the content the chain clauses read |
+| H-leaf, H-node, H-domain (record 001) | the membership tree's hashes are collision-free and leaves and nodes are hashed under separate domains |
+| H-sorted (record 006) | the revocation root is committed over strictly sorted handles |
+
 
 ### Construction 022 · Blinded digest references — the digest-valued members of the credential specification, unenumerable at rest and openable in proof
 
@@ -1905,6 +2265,32 @@ Rejection codes: `reference-mismatch (unsat: no (bytes, u) opens the presented r
 | 2026-09-07 | `requested` | geoffturk / stormer78 (cred-spec #38) · ScottJeezey (cred-tf #39) | cred-spec #38 scope note: five digest-valued members of two kinds; the issue's third tracked item is coordination with the ZKP task force's blinded-binder work |
 | 2026-09-21 | `specified` | mitchuski | the credential maintainer's review of PR #8 (2026-09-16) asked for a record a reader coming from #38 will find; this record: statement, witness, public inputs, one clause bound to commitment-open (the opening, with the opened bytes tied to what the enclosing record reads), the two reference kinds kept apart in the issuance lines, three placements with their costs (conjecture), the disposition left to #38 |
 
+Revisions within a state:
+
+| date | by | note |
+|---|---|---|
+| 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/Gadgets/P022DigestRef.lean in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: Formal.Gadgets.RefRel — the reference opens to (the bytes the enclosing clauses read, u)
+- scope: the opening and the one-credential clause; validity, entitlement and salt placement (does-not-establish 1, 2, 4) are out of scope; route 1 linkability (line 3) is record 008's visible_value_links
+
+| theorem | proves |
+|---|---|
+| `reference_opens_once` | reference-mismatch: a reference names one credential |
+| `two_credential_gap` | the one-credential clause is necessary: opened and read separately, the proof passes about a credential that is not the referenced one |
+| `chain_sound_unsalted` | does-not-establish 5: a chain reference re-checked against the presented parent is sound with no salt — blinding serves enumeration resistance, not chain soundness |
+
+| hypothesis | carries |
+|---|---|
+| H-digest | the declared digest is collision-free over (bytes, salt) (modelled as injective) |
+
 
 ### Construction 023 · Two-vouch admission proof — an applicant proves k ≥ 2 vouches from distinct current members to the issuing community, without disclosing which members
 
@@ -1967,10 +2353,12 @@ The issuing community learns that the applicant — the subject named in a pendi
 
 - that any voucher consented to be counted toward this admission — a relationship credential is evidence of a relationship, and whether it is a vouch is the community's reading under its rules (general #31: 'vouching is social, not technical')
 - that the applicant is not already a member — a member can hold k VRCs; if the policy needs 'not a member', the statement gains a non-membership clause against root_C (record 006's gadget applied to the membership set), which this record does not include
+- that no voucher is the applicant — the statement has no clause excluding it, and an applicant who is already a member can vouch for itself through its own grant, so one of the k counted members is the applicant (the formal model's counter-deployment `self_vouch_counted`); the refusal is the community's admission check, which must refuse an applicant who is already a member (record 024 carries the key-level exclusion as its clause 7)
 - that the k vouchers are k distinct natural persons — distinct member leaves, not distinct people (record 002's negative space; personhood is never inferred)
 - the invitation or the identity check — the VIC and the vetting statement are presented as credentials beside this proof, not proven inside it (the vetting statement's PASS limits carry: cred-spec PR #50)
 - that the community will admit the applicant — the proof's outcome is one input to the community's policy engine; verifying it, accepting it under policy and issuing the VMC are three acts (WG-04)
 - what the VRCs say beyond naming the applicant as subject — attributes, scopes and the relationship's own terms are outside the statement
+- that a community's admission path mints the witness this record needs — an admission that issues no relationship credentials has no VRC to prove over; record 024 states the hidden-vetting statement such a path can run
 
 #### Adversary, per claim
 
@@ -2008,6 +2396,7 @@ Rejection codes: `voucher-not-member (unsat: a VRC issuer with no grant leaf und
 - the applicant's identifier(s) named in the VRCs must be, or carry, a ZK-openable commitment to the applicant's secret where they differ from the admission identifier (record 007; WG-14) — or the applicant uses one `directed` identifier toward every voucher and the community, in which case clause 5 is holder binding alone
 - the join request (Trust Tasks `vtc/join-requests/submit`, with `supplement` for a deferred answer) carries the presentation, and its exchange is the context descriptor the proof binds — the citation of that exchange on the VMC later issued is record 008's concern (cred-spec #58)
 - the invitation (VIC) and the identity check (the vetting statement) travel beside the proof as credentials; the policy engine combines them with the proof's outcome under the community's rules (WG-04)
+- the context the proof binds should include a challenge the community mints per applicant and spends when the proof is counted — a proof verifies as often as it is submitted, so a join-request context alone lets the same bytes count twice; an applicant answering `requestMore` obtains a fresh challenge
 
 #### Provenance
 
@@ -2026,6 +2415,190 @@ Rejection codes: `voucher-not-member (unsat: a VRC issuer with no grant leaf und
 |---|---|---|---|
 | 2026-09-21 | `requested` | ScottJeezey (chair) on zkp-spec PR #11, for the record on zkp-tf #23 | Round 1 position, 'Build': the two-vouch admission proof has no home; add it and reference Berkeley's reference code as the constructor |
 | 2026-09-21 | `specified` | mitchuski | statement, witness, public inputs, seven clauses composed from 001 · 003 · 004 · 005 · 006 · 007, disclosure set, negative space, three adversary claims, horizon, ten rejection codes, four options (the reference code named, unmeasured); written from the chair's ask, the Phase 4 flow and record 010's sibling statement — the constructor's own figures are the next evidence |
+
+Revisions within a state:
+
+| date | by | note |
+|---|---|---|
+| 2026-09-23 | mitchuski | doesNotEstablish line added from the formal model: no clause excludes a self-vouch by an applicant who is already a member; the refusal is placed on the admission check; no state change |
+| 2026-09-23 | mitchuski | formal model built (Lean, composed from the gadget library); no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/R023/Soundness.lean (with Model.lean, NegativeSpace.lean) in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: Formal.R023.Statement — at least k pairwise-distinct members, each with its grant leaf in the membership tree and its handle unrevoked, each linked through one controller to a VRC whose subject is the applicant's admission identifier or opens to it
+- scope: clauses 1–6 as a counting model; clause 7 (transcript) is record 003's; consent, invitation, identity check and admission are outside any clause
+
+| theorem | proves |
+|---|---|
+| `Formal.R023.soundness` | the verifier's relation (clauses 1–6 as gadget relations) establishes the statement, through record 001's path_sound, record 005's distinct-leaves lemma and record 006's neighbours_sound |
+| `Formal.R023.no_vrc_no_statement` | does-not-establish 8: an admission path that issues no VRC can never satisfy the statement, for any k ≥ 1 |
+| `Formal.R023.self_vouch_counted` | does-not-establish 3: an applicant who is already a member vouches for itself through its own grant — the relation accepts k = 2 and the statement holds |
+
+| hypothesis | carries |
+|---|---|
+| H-sig | clause 1: a verifying VRC is one a member issued |
+| H-leaf, H-node, H-domain (record 001) | the membership tree's hashes are collision-free and leaves and nodes are hashed under separate domains |
+| H-sorted (record 006) | the revocation root is committed over strictly sorted handles |
+| H-com (record 007) | the identifier derivation binds (secret, salt) |
+
+
+### Construction 024 · Hidden-vetting admission — an applicant proves k attestations from pairwise-distinct eligible vetters of the issuing community, without disclosing which vetters
+
+*This record is at state `constructed`: a runtime exists and has measured at least one construction option; no independent party has reproduced it. Informative.*
+
+| | |
+|---|---|
+| kind | composed |
+| state | `constructed` |
+| priority | P1 |
+| constructor | mitchuski |
+| requested by | specified and constructed by the ZKP TF co-chair |
+| request | zkp-spec PR #11 (ScottJeezey 2026-09-21, Round 1 position, 'Build'): the admission proof being built for the Linux Plumbers integration · trust-tasks-tf `vtc/join-requests/manifest/0.2`: `vetting.ext` / `vetting.extCritical`, with `org.openvtc.hidden-vetting` as the example namespace of a criterion that must not receive named statements · general #31 (stormer78 2026-08-26): the Phase 4 join, whose identity check is the vetting step |
+
+**Composes:** [001](#construction-001-%C2%B7-set-membership-over-an-accredited-root) ∧ [002](#construction-002-%C2%B7-scoped-nullifier-(reuse-detection)) ∧ [003](#construction-003-%C2%B7-transcript-binding) ∧ [004](#construction-004-%C2%B7-holder-binding-(key-from-secret)) ∧ [005](#construction-005-%C2%B7-distinct-member-%2F-distinct-issuer) — a [[ref: composed construction]]: one transcript, one [[ref: disclosure set]], written fresh.
+
+#### Statement
+
+The issuing community learns that k pairwise-distinct eligible vetters of the live period each attested this applicant's per-application identifier with the stated facts, without learning which of its vetters attested, any vetter's DID, or whether a vetter has attested for anyone else.
+
+**Need.** the identity-vetting step of a community's join: the criterion needs k statements from distinct eligible vetters, and a community running hidden vetting counts them without learning which of its vetters made them — so no vetter's DID reaches the community
+
+#### Witness
+
+*Never leaves the holder.*
+
+- for each attesting vetter: its secret and the evidence that it is an eligible vetter of the live period (in the Groth16 route, the opening of its enrolled commitment and its Merkle path)
+- for each attestation: the profile-specific spend witness — either a secret-derived slot within the cap, or a valid blind-issued token and its opening
+- the applicant's per-application secret, from which the attested identifier derives
+
+#### Public inputs
+
+- the community, eligible-vetter set commitment and live period, plus the selected cap profile and its parameters: per-vetter quota or aggregate token budget for a defined vetter set and accounting interval
+- k — the criterion's `minStatements`, with its per-method floors and independence caps
+- the requirements digest of the criterion version the applicant started under
+- the applicant's per-application identifier and join DID — disclosed by construction, since the applicant is applying
+- the challenge — minted by the community for this applicant and spent when the proof is counted
+- transcriptDigest over the challenge, the requirements digest, the join DID and every attestation's public values
+
+#### Relation
+
+1. each attester is an eligible vetter of the live period, proven without its identifier — [[ref: set-membership]] ([[ref: construction record]] 001, [Set membership over an accredited root](#construction-001-%C2%B7-set-membership-over-an-accredited-root)) · runtime `runtimes/circom-gadget/circuits/vetting_attest.circom`
+2. each attestation carries a tag derived from its vetter's secret and the applicant's identifier — deterministic for one vetter and one applicant, unlinkable across applicants, and not recomputable from anything public — [[ref: nullifier]] ([[ref: construction record]] 002, [Scoped nullifier (reuse detection)](#construction-002-%C2%B7-scoped-nullifier-(reuse-detection))) · runtime `runtimes/circom-gadget/circuits/vetting_attest.circom`
+3. the k tags are pairwise distinct, so one vetter attesting twice counts once — [[ref: distinctness]] ([[ref: construction record]] 005, [Distinct member / distinct issuer](#construction-005-%C2%B7-distinct-member-%2F-distinct-issuer)) · runtime `runtimes/circom-gadget/harness-vetting.mjs`
+4. each attestation consumes an authorized serial in the declared community, profile and accounting interval; the same spend cannot increase the count twice. A profile may derive serials from a stable vetter secret with bounded slots, or use blind-issued transferable tokens under an aggregate issuance budget. A conflicting reuse is refused; a profile may acknowledge an identical resubmission without adding a counted attestation — [[ref: nullifier]] ([[ref: construction record]] 002, [Scoped nullifier (reuse detection)](#construction-002-%C2%B7-scoped-nullifier-(reuse-detection))) · runtime `runtimes/circom-gadget/circuits/vetting_attest.circom`
+5. the attested identifier derives from the applicant's per-application secret, which the applicant holds — [[ref: key-binding]] ([[ref: construction record]] 004, [Holder binding (key from secret)](#construction-004-%C2%B7-holder-binding-(key-from-secret))) · runtime `runtimes/circom-gadget/circuits/vetting_bind.circom`
+6. the submission is bound to transcriptDigest — the community's challenge, the requirements digest, the join DID and every attestation's public values — [[ref: transcript-bind]] ([[ref: construction record]] 003, [Transcript binding](#construction-003-%C2%B7-transcript-binding)) · runtime `runtimes/circom-gadget/circuits/vetting_bind.circom`
+7. no attester is the applicant — [[ref: distinctness]] ([[ref: construction record]] 005, [Distinct member / distinct issuer](#construction-005-%C2%B7-distinct-member-%2F-distinct-issuer))
+
+#### Disclosure set
+
+- the outcome (k distinct eligible vetters attested this applicant / not shown)
+- k tags — one per attestation, standing in the community's counting facts where a vetter DID stands on the named path
+- per statement: the facts the community's counting rule reads (method, verified claim types, validity window, identity commitment)
+- serials and their declared spend scope, checked against the community ledger; a profile defines whether identical resubmissions are refused or acknowledged without increasing the count
+- the vetter-set commitment, period, selected cap profile and accounting parameters; the requirements digest, join DID, challenge and transcriptDigest
+
+#### Does not establish
+
+- that the k attesters are k distinct people — distinct tags mean distinct vetter secrets; a vetter who hands its secret to another lets one person attest under two tags
+- that a transferable-token budget limits each vetter: vetters can pool tokens. A per-vetter quota requires a profile that binds authorized spends to a stable enrolled secret and bounds slots, or another construction demonstrating equivalent enforcement. Neither profile bounds distinct people or prevents sharing a secret (DG-024-4)
+- that no attester is the applicant, in the Groth16 route — clause 7 is not built there; it holds only while applicants are outside the vetter set
+- that the vetting session happened as attested — the vetter's check of the person is outside the proof, as on the named path
+- anything to a party other than the issuing community — it keeps the vetter set and verifies the proof; no third party can audit that admission followed the criterion
+- that the applicant is admitted — verifying the proof, counting it under policy and issuing the membership grant are three acts (WG-04)
+- any relationship between the applicant and the vetters — no relationship credential (VRC) is involved; a policy requiring a VRC pair with the vetters would disclose what this proof withholds
+- that proof acceptance enforces the complete admission policy: per-method floors, independence caps, statement validity and eligibility checks belong to the named policy evaluator. The lab harness checks total tag count and returns method facts; it does not implement the complete evaluator
+- that sequential replay tests establish concurrent or durable single-use behavior: the ledger must atomically prevent additional counting across requests, retries and restarts; the current asynchronous lab harness requires further review
+
+#### Adversary, per claim
+
+- **verifier · issuer-verifier-colluding** — the community learns which of its eligible vetters attested no better than chance over the vetter set, less whatever the disclosed per-statement facts narrow that set
+- **verifier** — one vetter's attestations for two applicants cannot be linked through their tags or serials
+
+#### Horizon
+
+- earliest of: the vetter-set period · the vetter-set commitment in force (a vetter removed from the set cannot attest under the new commitment) · each statement's validity and the criterion's `maxStatementAge` · the requirements digest's `requirementsGrace`
+- the challenge — single use: spent when the proof is counted, so an applicant answering `requestMore` obtains a fresh challenge
+
+#### Conformance fixtures
+
+Families: `accepts` · `rejects-unsat` · `rejects-verify` · `unlinkable` · `current`
+
+Rejection codes: `tag-duplicate (two attestations from one vetter)`, `token-serial-spent (conflicting or additional counted reuse; the lab profile refuses every repeat)`, `vetter-not-enrolled (unsat)`, `vetter-cap-exceeded (secret-derived profile only: a slot at or above the cap)`, `vetter-root-stale (verify: an attestation made under a replaced vetter-set commitment)`, `statement-metadata-mismatch (verify)`, `requirements-digest-mismatch (verify)`, `join-did-mismatch (verify: an attestation made for another applicant)`, `binding-proof-invalid (unsat: a binding made without the applicant secret)`, `challenge-replayed (verify)`, `challenge-not-minted (verify)`, `attestation-count-below-k`, `unsupported-extension (the criterion's `extCritical` names a namespace the client does not implement: it stops before gathering named statements)`
+
+#### Construction options
+
+*Candidate constructions, each evaluated against the construction-selection criteria ([DTG-ZKP-REQ] §16.1), with its cost as measured or as conjectured.*
+
+| construction | cost | status | source |
+|---|---|---|---|
+| the construction the chair named on PR #11 for the Linux Plumbers integration (Berkeley, with Glenn Gore integrating) — not public; its construction and figures are recorded here when its authors publish them | not recorded | unmeasured | zkp-spec PR #11 (ScottJeezey 2026-09-21) |
+| vetters named — the named path: each vetter issues a signed vetting statement and the community counts vetter DIDs. No proof; the privacy claims above do not apply | zero | unmeasured | trust-tasks-tf `vtc/join-requests/manifest/0.2` (VettingRequirements) |
+| Groth16 / BN254 / Poseidon (lab) — each vetter proves its own attestation (vetting_attest: leaf of the vetter-set root, tag = Poseidon(tag, secret, applicantId), serial = Poseidon(tag, secret, period, slot) with slot < cap, statement bound) and the applicant proves one binding (vetting_bind: applicantId from the applicant secret, transcript over the challenge, requirements digest, join DID and every attestation). The tag must come from the vetter's secret — a tag derived from anything public the community could recompute for every vetter — and the applicant does not hold vetters' secrets, so the route takes k + 1 proofs. Removing one vetter is a new root with nobody re-enrolled; the cap is per vetter and in-circuit, with no token issuance; tag distinctness is checked by the community over the public tags; clause 7 is not built | vetting_attest 5,677 constraints, vetting_bind 238 (--O2); one attestation proof ~813 ms, made by each vetter at its own time, the binding ~123 ms (snarkjs/wasm, Node 22, win32/x64); community verification at k = 5 ~110 ms; submission at k = 5 1,376 B with compressed points (2,144 B uncompressed), computed from point sizes, 7,009 B as snarkjs JSON; lab-only trusted setup (one contributor, fixed entropy) | **measured** | evidence repository runtimes/circom-gadget/test-vetting.mjs, run 2026-09-23 — H1–H12 12/12 |
+
+#### Issuance requirements
+
+- the community publishes the eligible-vetter set, live-period policy and selected cap profile. A secret-derived profile specifies a stable enrolled secret and bounded slots per accounting interval. A transferable-token profile specifies the exact vetter set, total issuance budget, quota/tick rules, token expiry and carry-over treatment; it does not imply a cap on each holder
+- the criterion publishes its parameters under `vetting.ext` in a namespace the community controls and names that namespace in `vetting.extCritical` (trust-tasks-tf `vtc/join-requests/manifest/0.2`), so a client that does not implement it refuses instead of gathering named statements
+- the community mints a challenge per applicant, keeps it, and spends it when the proof is counted
+- no signed vetting statement and no relationship credential is issued on this path
+- the requirements digest binds the cap profile, community, accounting interval and policy parameters. Define the serial namespace and identity of an identical spend; ledger updates and counting must be atomic and durable. An acknowledged retry adds neither a spend nor an attestation, and does not reuse a consumed challenge
+- name the admission policy evaluator and version: it applies per-method floors, independence caps, validity and eligibility rules to verified facts before a separate issuance decision. Assign these checks explicitly when the proof harness does not implement them
+
+#### Provenance
+
+- zkp-spec PR #11 (ScottJeezey 2026-09-21): the admission proof for the Linux Plumbers integration; record 023 is the vouch-shaped statement specified from that ask
+- trust-tasks-tf `vtc/join-requests/manifest/0.2`: `VettingRequirements` (`minStatements`, `minByMethod`, `eligibleVetters.role`, `independence`), `ext` and `extCritical`
+- general #31 (stormer78 2026-08-26): the Phase 4 join — invite, vouches, identity check
+- record 023 — the sibling admission statement over member-issued relationship credentials
+- commit: github.com/mitchuski/dtgwg-zkp-mage
+
+#### Record history
+
+| date | to | by | evidence |
+|---|---|---|---|
+| 2026-09-23 | `specified` | mitchuski | statement, witness, public inputs, seven clauses composed from 001 · 002 · 003 · 004 · 005, disclosure set, negative space, two adversary claims, horizon, rejection codes, three options — from the chair's ask and the trust-tasks vetting requirements |
+| 2026-09-23 | `constructed` | mitchuski | Groth16 route built in the evidence repository's lab (vetting_attest + vetting_bind + the community's admission check), H1–H12 12/12; clauses 1–6 carry runtimes, clause 7 is not built |
+
+Revisions within a state:
+
+| date | by | note |
+|---|---|---|
+| 2026-09-23 | mitchuski | clause 4 loosened to admit blind, transferable serials capped per vetter set, alongside serials derived from the vetter's secret; doesNotEstablish line added for the per-vetter cap (decision gate DG-024-4, zkbook/DECISION-024-clause4.md); no state change |
+| 2026-09-23 | mitchuski | Local draft: align witness, public inputs, disclosure, issuance and fixtures with the two cap profiles; distinguish idempotent acknowledgement from double counting and identify external policy and atomic-ledger obligations. No state promotion or task-force adoption; no new runtime or formal conformance claim. |
+| 2026-09-23 | mitchuski | formal model built (Lean, composed from the gadget library); no state change |
+
+#### Formal verification
+
+*A machine-checked model of this record. It proves the listed properties of the abstract relation or policy model; it is not evidence of the construction's cryptography — the hypotheses name what remains to discharge against the construction. It confers no evidence state.*
+
+- system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
+- location: formal/Formal/R024/Soundness.lean (with Model.lean, SingleUse.lean, NegativeSpace.lean) in the evidence repository (uncommitted at this revision)
+- reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
+- statement: Formal.R024.Statement, read for a class-credential construction — at least k pairwise-distinct members, none the applicant, each holding a credential under a live label whose tag on the applicant's identifier is among those counted
+- scope: the counting rule and the single-use rules over abstract primitives; not the construction's cryptography, unlinkability or the adversary claims; per-vetter cap attribution (DG-024-4) is not modelled
+
+| theorem | proves |
+|---|---|
+| `Formal.R024.soundness` | if the counting rule accepts (tags extractable, pairwise distinct, at least k), the statement holds — through record 005's owners_distinct with record 002's tag as the value |
+| `Formal.R024.completeness` | k pairwise-distinct honest vetters give k pairwise-distinct tags — clause 3 does not over-collapse |
+| `Formal.Gadgets.run_once` | clause 4 and the challenge: over any run of presentations a spent value is counted at most once |
+| `Formal.R024.not_minted_refused` | a challenge the community did not issue is refused |
+| `Formal.R024.batch_over_cap_refused` | an issuance batch over the cap is refused (DG-024-4: both cap profiles share this) |
+| `Formal.R024.distinct_members_not_distinct_people` | does-not-establish 1: one person holding two memberships — the rule accepts and the statement holds |
+| `Formal.R024.rekey_counts_twice` | where one proof mixes periods, a vetter whose secret changes between them counts twice: the secret must be stable across periods |
+
+| hypothesis | carries |
+|---|---|
+| H-Σ (Extractable) | clauses 1, 2 and 7: soundness of the construction's proof — every accepted tag comes from a credential issued under a live label, not under the applicant's key |
+| H-stable (SecretStable) | a vetter's secret is one across periods, where a proof mixes them |
+| H-applicant (ApplicantSecret) | an applicant holding a credential holds it over its own key; vacuous for one holding none |
+| H-fresh, H-tag | completeness only: two members never share a secret; tags do not collide for one applicant |
 <!-- generated-section:constructions:end -->
 
 <!-- generated-section:stacks:start -->
@@ -2310,6 +2883,8 @@ This section is informative. Items 1–6 are written by the editors; the numbere
 - **Construction 023** — against verifier: the issuing community learns nothing about which members vouched beyond the count reaching k — no voucher identifier, VRC-side or VMC-side, no path position, no leaf
 - **Construction 023** — against verifiers-colluding: two join requests by one applicant to two communities, or a repeated request to one, cannot be linked through this proof beyond the disclosed admission identifier — the proof emits no identifier-derived value; the admission identifier is disclosed by the applicant's own act
 - **Construction 023** — against registry-operator, issuer-verifier-colluding: fetching root_C and rl_root does not identify the applicant or the vouchers — holds only if roots are fetched without a per-applicant query
+- **Construction 024** — against verifier, issuer-verifier-colluding: the community learns which of its eligible vetters attested no better than chance over the vetter set, less whatever the disclosed per-statement facts narrow that set
+- **Construction 024** — against verifier: one vetter's attestations for two applicants cannot be linked through their tags or serials
 
 ### Negative space as recorded, per construction
 
@@ -2331,7 +2906,8 @@ This section is informative. Items 1–6 are written by the editors; the numbere
 - **Construction 020** does not establish: that the principal authorised this specific act (grant ≠ invocation — the invocation is a trust-task artifact); the principal's identity; that the agent is not also acting for others; …
 - **Construction 021** does not establish: that the presenter is someone the scope will deal with — a valid chain establishes narrowing by parties entitled to narrow, not that the leaf subject independently qualifies; that is the governing party's policy call (§Attenuation) and clause 7 is present only where the policy asks for it; delegation: the presenter acts as itself, and nothing here appoints it to act in anyone's name (§Authority is not delegation — that is record 020); that the governing party's own permission to govern S is current beyond 'accredited under root_G at the stated state'; …
 - **Construction 022** does not establish: that the referenced credential is currently valid, unrevoked or accepted (record 006; the enclosing record's own clauses); that the party issuing the referencing credential was entitled to reference that credential — an acknowledgement by a non-member, an acceptance by the wrong delegate, a witness with no standing: governance and the enclosing record decide that, not the opening; unlinkability of presentations that show the same salted digest (route 1): hiding the plaintext behind a salt stops enumeration and nothing else; a stable visible reference still links every presentation of the referencing credential, exactly as record 008 says of a visible commitment C; …
-- **Construction 023** does not establish: that any voucher consented to be counted toward this admission — a relationship credential is evidence of a relationship, and whether it is a vouch is the community's reading under its rules (general #31: 'vouching is social, not technical'); that the applicant is not already a member — a member can hold k VRCs; if the policy needs 'not a member', the statement gains a non-membership clause against root_C (record 006's gadget applied to the membership set), which this record does not include; that the k vouchers are k distinct natural persons — distinct member leaves, not distinct people (record 002's negative space; personhood is never inferred); …
+- **Construction 023** does not establish: that any voucher consented to be counted toward this admission — a relationship credential is evidence of a relationship, and whether it is a vouch is the community's reading under its rules (general #31: 'vouching is social, not technical'); that the applicant is not already a member — a member can hold k VRCs; if the policy needs 'not a member', the statement gains a non-membership clause against root_C (record 006's gadget applied to the membership set), which this record does not include; that no voucher is the applicant — the statement has no clause excluding it, and an applicant who is already a member can vouch for itself through its own grant, so one of the k counted members is the applicant (the formal model's counter-deployment `self_vouch_counted`); the refusal is the community's admission check, which must refuse an applicant who is already a member (record 024 carries the key-level exclusion as its clause 7); …
+- **Construction 024** does not establish: that the k attesters are k distinct people — distinct tags mean distinct vetter secrets; a vetter who hands its secret to another lets one person attest under two tags; that a transferable-token budget limits each vetter: vetters can pool tokens. A per-vetter quota requires a profile that binds authorized spends to a stable enrolled secret and bounds slots, or another construction demonstrating equivalent enforcement. Neither profile bounds distinct people or prevents sharing a secret (DG-024-4); that no attester is the applicant, in the Groth16 route — clause 7 is not built there; it holds only while applicants are outside the vetter set; …
 <!-- generated-section:privacy:end -->
 
 ## Governance Considerations

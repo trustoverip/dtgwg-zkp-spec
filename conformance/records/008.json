@@ -129,6 +129,11 @@
       "date": "2026-09-21",
       "by": "mitchuski",
       "note": "Review of 2026-09-16: witness and issuance re-read against cred-spec PR #56 (initiating-document id + task digest); the #38 digest members moved to their own record, 022; the taskContext ask filed as a credential-specification issue. State unchanged."
+    },
+    {
+      "date": "2026-09-23",
+      "by": "mitchuski",
+      "note": "formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change"
     }
   ],
   "history": [
@@ -146,5 +151,28 @@
       "evidence": "specified from Scott's two routes + cred-spec §Trust Task Context Binding + the lab's descriptor-digest and nullifier shapes; costs labelled conjecture",
       "task": "board/specify"
     }
-  ]
+  ],
+  "formal": {
+    "system": "Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom",
+    "location": "formal/Formal/Gadgets/P008Binder.lean in the evidence repository (uncommitted at this revision)",
+    "reproduce": "sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom",
+    "statement": "Formal.Gadgets.BinderRel — the commitment C opens to the taskContext (route 1)",
+    "theorems": [
+      {
+        "name": "binder_opens_once",
+        "proves": "binder-mismatch: one commitment opens to one taskContext"
+      },
+      {
+        "name": "visible_value_links",
+        "proves": "does-not-establish 1 (the open design requirement): a shown value depending only on the credential is equal in every presentation, so equality correlates them — hiding the plaintext does not change that"
+      }
+    ],
+    "hypotheses": [
+      {
+        "name": "H-com",
+        "carries": "the commitment binds (taskContext, salt) (modelled as injective)"
+      }
+    ],
+    "scope": "route 1 only; route 2 (context pseudonym) is proposed and unmodelled; completion, plaintext custody and outcome status (does-not-establish 2–4) are out of scope"
+  }
 }

@@ -122,5 +122,39 @@
       "evidence": "the credential maintainer's review of PR #8 (2026-09-16) asked for a record a reader coming from #38 will find; this record: statement, witness, public inputs, one clause bound to commitment-open (the opening, with the opened bytes tied to what the enclosing record reads), the two reference kinds kept apart in the issuance lines, three placements with their costs (conjecture), the disposition left to #38",
       "task": "board/specify"
     }
+  ],
+  "formal": {
+    "system": "Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom",
+    "location": "formal/Formal/Gadgets/P022DigestRef.lean in the evidence repository (uncommitted at this revision)",
+    "reproduce": "sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom",
+    "statement": "Formal.Gadgets.RefRel — the reference opens to (the bytes the enclosing clauses read, u)",
+    "theorems": [
+      {
+        "name": "reference_opens_once",
+        "proves": "reference-mismatch: a reference names one credential"
+      },
+      {
+        "name": "two_credential_gap",
+        "proves": "the one-credential clause is necessary: opened and read separately, the proof passes about a credential that is not the referenced one"
+      },
+      {
+        "name": "chain_sound_unsalted",
+        "proves": "does-not-establish 5: a chain reference re-checked against the presented parent is sound with no salt — blinding serves enumeration resistance, not chain soundness"
+      }
+    ],
+    "hypotheses": [
+      {
+        "name": "H-digest",
+        "carries": "the declared digest is collision-free over (bytes, salt) (modelled as injective)"
+      }
+    ],
+    "scope": "the opening and the one-credential clause; validity, entitlement and salt placement (does-not-establish 1, 2, 4) are out of scope; route 1 linkability (line 3) is record 008's visible_value_links"
+  },
+  "revisions": [
+    {
+      "date": "2026-09-23",
+      "by": "mitchuski",
+      "note": "formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change"
+    }
   ]
 }
