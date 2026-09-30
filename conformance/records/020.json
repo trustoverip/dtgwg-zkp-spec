@@ -4,7 +4,7 @@
   "kind": "composed",
   "state": "specified",
   "priority": "P2",
-  "owner": "construction: sankarshanmukhopadhyay · DenisPopov15 · mitchuski (per ScottJeezey, cred-tf #40) · record: stormer78 (PR #19)",
+  "owner": "construction: sankarshanmukhopadhyay · DenisPopov15 · mitchuski (per ScottJeezey, cred-tf #40) · record: stormer78 (§VDC, merged 2026-09-06)",
   "components": [
     "001",
     "003",
@@ -13,7 +13,7 @@
     "009"
   ],
   "request": {
-    "issue": "cred-spec PR #19 open question 6; ADR-001 §05 'deserves its own record once this one is proven' · cred-tf #40 (stormer78 08-22 design note; ScottJeezey 08-24: \"on our list alongside Q2\") · cred-spec #31 pre-merge list for #19",
+    "issue": "cred-spec §VDC (Verifiable Delegation Credential), open question 6 of its merge review; ADR-001 §05 'deserves its own record once this one is proven' · cred-tf #40 (stormer78 08-22 design note; ScottJeezey 08-24: \"on our list alongside Q2\") · cred-spec #31 pre-merge list for #19",
     "by": "stormer78 / sankarshanmukhopadhyay",
     "need": "prove an agent may act for a principal within scope S until T, chain attenuation-only, without revealing the principal — in the chained PROFILE only: the WD02 core VDC is single-hop, principal-issued, delegate-countersigned and needs no chain proof (cred-tf #40 §1)"
   },
@@ -128,8 +128,8 @@
   ],
   "provenance": {
     "spec": [
-      "cred-spec §VDC (Verifiable Delegation Credential) — merged 2026-09-06 (PR #19 over WD02): §Delegation Edges, §Delegation Chains (five chain checks; 'chain validity is a candidate for zero-knowledge presentation'), §Invocation Binding",
-      "cred-spec PR #42 editor's note (2026-09-10): 'proving a VDC chain valid without disclosing it' named as a predicate waiting on the ZKP task force",
+      "cred-spec §VDC (Verifiable Delegation Credential) — merged 2026-09-06 (over WD02): §Delegation Edges, §Delegation Chains (five chain checks; 'chain validity is a candidate for zero-knowledge presentation'), §Invocation Binding",
+      "cred-spec §Zero-Knowledge and Selective Disclosure editor's note (2026-09-10): 'proving a VDC chain valid without disclosing it' named as a predicate waiting on the ZKP task force",
       "cred-spec #9 (geoffturk 2026-09-10): the chain predicates are hidden-value equality, not common control — record 009",
       "liveness reqs v0.4 delegation evidence",
       "ADR-001 §05",
@@ -137,6 +137,18 @@
       "cred-tf #40 (delegation as a design-time case; the chain-resolution boundary) · cred-spec #31 (#19 pre-merge checklist)"
     ]
   },
+  "revisions": [
+    {
+      "date": "2026-09-11",
+      "by": "mitchuski",
+      "note": "Door D17 — re-read against the merged VDC text (cred-spec main, 2026-09-06/10): depth restated as the per-ancestor bound; the issuer-equals-parent-subject clause added and bound to record 009 (hidden-value equality); `credentialStatus` corrected — conditional on every VDC, not only chained ones; issuance and provenance now cite the merged sections; three negative-space lines added (intended-party check, invocation demonstration, chain length). State unchanged."
+    },
+    {
+      "date": "2026-09-23",
+      "by": "mitchuski",
+      "note": "formal model built (Lean, composed from the gadget library); no state change"
+    }
+  ],
   "history": [
     {
       "to": "requested",
@@ -153,11 +165,51 @@
       "task": "board/specify"
     }
   ],
-  "revisions": [
-    {
-      "date": "2026-09-11",
-      "by": "mitchuski",
-      "note": "Door D17 — re-read against the merged VDC text (cred-spec main, 2026-09-06/10): depth restated as the per-ancestor bound; the issuer-equals-parent-subject clause added and bound to record 009 (hidden-value equality); `credentialStatus` corrected — conditional on every VDC, not only chained ones; issuance and provenance now cite the merged sections; three negative-space lines added (intended-party check, invocation demonstration, chain length). State unchanged."
-    }
-  ]
+  "formal": {
+    "system": "Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom",
+    "location": "formal/Formal/Chains/Records.lean (with Presentation.lean and Gadgets/ChainResolve.lean) in the evidence repository (uncommitted at this revision)",
+    "reproduce": "sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom",
+    "statement": "Formal.Chains.Statement with the root's own depth — the act conferred and unexpired at every hop, depth within the root, every issuer its parent's subject, the root's issuer a member, no hop revoked",
+    "theorems": [
+      {
+        "name": "Formal.Chains.r020_soundness",
+        "proves": "the local per-hop checks establish the global statement"
+      },
+      {
+        "name": "Formal.Chains.escalation_unsat",
+        "proves": "the rejection code scope-escalation: a hop that does not confer the act makes the chain unacceptable"
+      },
+      {
+        "name": "Formal.Chains.linked_of_constraint",
+        "proves": "clause 2: the in-circuit constraint issuer − subject = 0 is equality (record 009)"
+      },
+      {
+        "name": "Formal.Gadgets.leaf_act_all",
+        "proves": "clause 1: checking the act at the leaf gives it at every hop"
+      },
+      {
+        "name": "Formal.Gadgets.depth_within_every_ancestor",
+        "proves": "clause 1: no hop lies more than n steps below any ancestor bearing n"
+      },
+      {
+        "name": "Formal.Gadgets.no_decrement_unbounded",
+        "proves": "clause 1: without 'a child bears at most n − 1' a chain runs deeper than its root allows"
+      }
+    ],
+    "hypotheses": [
+      {
+        "name": "H-sig",
+        "carries": "clause 3: each hop's countersignature verifies"
+      },
+      {
+        "name": "H-leaf, H-node, H-domain (record 001)",
+        "carries": "the membership tree's hashes are collision-free and leaves and nodes are hashed under separate domains"
+      },
+      {
+        "name": "H-sorted (record 006)",
+        "carries": "the revocation root is committed over strictly sorted handles"
+      }
+    ],
+    "scope": "clauses 1–4 and 6; the agent's key (5) and the transcript (7) are records 004 and 003; chain-length hiding is a profile property"
+  }
 }

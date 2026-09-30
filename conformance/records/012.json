@@ -11,7 +11,7 @@
     "007"
   ],
   "request": {
-    "issue": "cred-spec #22 (talltree 08-29: 'the ZK proof simply needs to prove the same person controls the DIDs') · cred-spec PR #30 §Choosing a scope",
+    "issue": "cred-spec #22 (talltree 08-29: 'the ZK proof simply needs to prove the same person controls the DIDs') · cred-spec §Choosing a scope",
     "by": "talltree / geoffturk / stormer78",
     "need": "under three correlation scopes, a holder who used `pairwise` identifiers (distinct by definition) or distinct wider-scoped ones, and now wishes to be recognised as the same party across several communities or relationships, needs one proof — and no other case needs any"
   },
@@ -93,7 +93,7 @@
       "construction": "no proof — where the holder deliberately reused one `directed` or `public` identifier across the credentials, the correlation is on their face (WD02 §Choosing a scope)",
       "cost": "zero",
       "measured": false,
-      "source": "cred-spec PR #30"
+      "source": "cred-spec §Choosing a scope"
     },
     {
       "construction": "Groth16 composition: (k−1) × record-007 openings + k non-revocation legs + 1 transcript constraint",
@@ -108,7 +108,7 @@
   "provenance": {
     "spec": [
       "cred-spec #22 (talltree 2026-08-29T22:40Z: the three-scope ZK observation)",
-      "cred-spec PR #30 §Choosing a scope (WD02 draft) · Privacy Consideration 2 (intentional correlation via personas)",
+      "cred-spec §Choosing a scope · Privacy Consideration 2 (intentional correlation via personas)",
       "cred-spec §VPC (Verifiable Persona Credential) — the credential-layer instrument for the same intent"
     ]
   },
@@ -126,6 +126,40 @@
       "date": "2026-09-05",
       "evidence": "composed from 007 + 006 + 003 under one transcript; disclosure set and negative space written fresh (composition rule)",
       "task": "board/specify"
+    }
+  ],
+  "formal": {
+    "system": "Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom",
+    "location": "formal/Formal/Composed/R012.lean in the evidence repository (uncommitted at this revision)",
+    "reproduce": "sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom",
+    "statement": "clause 1: k − 1 common-control clauses against identifier_1",
+    "theorems": [
+      {
+        "name": "Formal.R012.star_to_clique",
+        "proves": "with H-com and k ≥ 2, the k − 1 clauses give every pair of the k identifiers one controller"
+      },
+      {
+        "name": "Formal.R012.star_without_binding_not_clique",
+        "proves": "without a binding derivation they do not — the record's 'sharing one witness' carries the statement then"
+      }
+    ],
+    "hypotheses": [
+      {
+        "name": "H-com (record 007)",
+        "carries": "the identifier derivation binds (secret, salt)"
+      },
+      {
+        "name": "k ≥ 2",
+        "carries": "at k = 1 there is no clause and nothing establishes a secret behind identifier_1"
+      }
+    ],
+    "scope": "clause 1; non-revocation (2) and the transcript (3) are records 006 and 003"
+  },
+  "revisions": [
+    {
+      "date": "2026-09-23",
+      "by": "mitchuski",
+      "note": "formal model built (Lean, composed from the gadget library); no state change"
     }
   ]
 }
