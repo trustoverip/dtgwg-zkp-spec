@@ -90,7 +90,9 @@
     "that the applicant is admitted — verifying the proof, counting it under policy and issuing the membership grant are three acts (WG-04)",
     "any relationship between the applicant and the vetters — no relationship credential (VRC) is involved; a policy requiring a VRC pair with the vetters would disclose what this proof withholds",
     "that proof acceptance enforces the complete admission policy: per-method floors, independence caps, statement validity and eligibility checks belong to the named policy evaluator. The lab harness checks total tag count and returns method facts; it does not implement the complete evaluator",
-    "that sequential replay tests establish concurrent or durable single-use behavior: the ledger must atomically prevent additional counting across requests, retries and restarts; the current asynchronous lab harness requires further review"
+    "that sequential replay tests establish concurrent or durable single-use behavior: the ledger must atomically prevent additional counting across requests, retries and restarts; the current asynchronous lab harness requires further review",
+    "the size of the anonymity set under an event label: a spend under `event-mode` narrows 'some vetter in this community' to 'some vetter at this event'; the framework's three mitigations — group floor, expiry, an `eventId` that names a gathering — are all MUST for the consumer (trust-tasks-tf PR #620) and bound that narrowing; the proof does not",
+    "a commitment in the applicant's identifier — the PCS binds voucher and attestation linkage to an enrolment secret inside the credential system, not to a DID verification-method commitment; component 007 (WG-14) is bypassed by this route, and a community admitting over it gets no 007 property (PR #11 review, 2026-09-28)"
   ],
   "adversary": [
     {
@@ -109,7 +111,8 @@
   ],
   "horizon": [
     "earliest of: the vetter-set period · the vetter-set commitment in force (a vetter removed from the set cannot attest under the new commitment) · each statement's validity and the criterion's `maxStatementAge` · the requirements digest's `requirementsGrace`",
-    "the challenge — single use: spent when the proof is counted, so an applicant answering `requestMore` obtains a fresh challenge"
+    "the challenge — single use: spent when the proof is counted, so an applicant answering `requestMore` obtains a fresh challenge",
+    "under an event label, the event's expiry — tokens live and die with their label, so an event's stockpile cannot be spent under the monthly key (trust-tasks-tf PR #620)"
   ],
   "fixtures": {
     "families": [
@@ -137,10 +140,10 @@
   },
   "options": [
     {
-      "construction": "the construction the chair named on PR #11 for the Linux Plumbers integration (Berkeley, with Glenn Gore integrating) — not public; its construction and figures are recorded here when its authors publish them",
-      "cost": "not recorded",
+      "construction": "the construction the chair named on PR #11 for the Linux Plumbers integration (Berkeley, with Glenn Gore integrating) — the Predicate Credential System (PCS): Σ-PS (Pointcheval–Sanders) credential base with the key-injective PRF Tag_DDH over BLS12-381, generalized Schnorr proofs under strong Fiat–Shamir; the applicant proves it holds attestations from k pairwise-distinct credentialed vetters, none of them itself, and receives a credential. SOURCE PUBLIC since 2026-09-28: OpenVTC/predicate-credential-system (MIT, arkworks 0.6, research artifact, not audited) at main 4f4edf5 — crate plus the demo pcs-vetting-prototype (Σ-PS + Tag_DDH; end-to-end tests: admission from two hidden vetters with no member id or vetter id in the facts; requestMore then resubmission counts once; one vetter counts once across submissions; a double-spent token does not count and the VTC cannot name anyone). Its five Trust Tasks are public (issuance lines; trust-tasks-tf PR #618/#620, 2026-09-23). Under this route the attestation linkage is bound to the vetter secret usk inside the credential system, not to a DID verification-method commitment (component 007 bypassed — see does-not-establish)",
+      "cost": "constructor-reported, from the repository README and asserted by its tests (fixed-format encoding over BLS12-381, not measured here): Σ-PS attestation 240 B, proof 1,392 B at k = 5, credential 96 B; Σ-BBS 416 / 2,272 / 112 B; Σ-EQ 480 / 2,512 / 192 B. Running times: criterion benches exist (benches/pcs.rs at k = 5) but no figures are published in the repository; the ~12 ms prove-and-verify quoted in review is unsourced here and is not recorded",
       "measured": false,
-      "source": "zkp-spec PR #11 (ScottJeezey 2026-09-21)"
+      "source": "OpenVTC/predicate-credential-system main 4f4edf5 (2026-09-28: import, demo, CI) — README §Instantiations, docs/testing-and-benchmarks.md, demo/README.md · zkp-spec PR #11 (ScottJeezey 2026-09-21) · trust-tasks-tf PR #618 and PR #620 (stormer78 2026-09-23) · OpenVTC/governance PR #25 (2026-09-24) · zkp-spec PR #11 inline review (DenisPopov15 2026-09-28/29: options 0 and 3 of record 023 are this construction; a local run of a reference flow confirmed, on a commit not on any public branch, so the record pins the public main)"
     },
     {
       "construction": "vetters named — the named path: each vetter issues a signed vetting statement and the community counts vetter DIDs. No proof; the privacy claims above do not apply",
@@ -158,17 +161,24 @@
   "issuance": [
     "the community publishes the eligible-vetter set, live-period policy and selected cap profile. A secret-derived profile specifies a stable enrolled secret and bounded slots per accounting interval. A transferable-token profile specifies the exact vetter set, total issuance budget, quota/tick rules, token expiry and carry-over treatment; it does not imply a cap on each holder",
     "the criterion publishes its parameters under `vetting.ext` in a namespace the community controls and names that namespace in `vetting.extCritical` (trust-tasks-tf `vtc/join-requests/manifest/0.2`), so a client that does not implement it refuses instead of gathering named statements",
-    "the community mints a challenge per applicant, keeps it, and spends it when the proof is counted",
+    "the community mints a challenge per applicant, keeps it, and spends it when the proof is counted — the wire is `vtc/vetting/pcs-challenge/0.1` (trust-tasks-tf PR #618, merged 2026-09-23): the challenge is 16 bytes as lowercase hex, compared for equality and never parsed; at most one open challenge per applicant (asking again replaces it); an `expiresAt`; spent when the proof is counted; a community that publishes no hidden-vetting criterion answers `notHiddenVetting`; the request carries a proof so no one consumes another applicant's open challenge",
     "no signed vetting statement and no relationship credential is issued on this path",
     "the requirements digest binds the cap profile, community, accounting interval and policy parameters. Define the serial namespace and identity of an identical spend; ledger updates and counting must be atomic and durable. An acknowledged retry adds neither a spend nor an attestation, and does not reuse a consumed challenge",
-    "name the admission policy evaluator and version: it applies per-method floors, independence caps, validity and eligibility rules to verified facts before a separate issuance decision. Assign these checks explicitly when the proof harness does not implement them"
+    "name the admission policy evaluator and version: it applies per-method floors, independence caps, validity and eligibility rules to verified facts before a separate issuance decision. Assign these checks explicitly when the proof harness does not implement them",
+    "the vetter side of option 1 has a public wire (trust-tasks-tf PR #618 and PR #620, merged 2026-09-23): `vtc/vetting/vetters/pcs-root/0.1` — enrolment for a class label; the community checks a live vetter grant, no credential under this label yet and the identifier this member was bound to, then signs a commitment it cannot open · `vtc/vetting/vetters/pcs-tokens/0.1` — one tick of an unconditional token drip at the community's published rate (a fetch that happened only when someone was busy would announce that they were busy; the quota is the community's to refuse) · `vetting/attestation/0.1` — vetter to applicant, the facts of the session with no issuer; `identifierScope: any`; the applicant MUST NOT record the delivering `issuer` beside it; dates, not timestamps, on the validity window · `vtc/vetting/vetters/event-mode/0.1` — a separate token label for a named event with its own rate, expiry and a group floor, requested by the vetter and approved by someone else (no Trust Task for the approval, by design). These are the framework's obligations behind clauses 2–5 and the challenge; the proof reads their outputs as witness and adds nothing to their semantics"
   ],
   "provenance": {
     "spec": [
       "zkp-spec PR #11 (ScottJeezey 2026-09-21): the admission proof for the Linux Plumbers integration; record 023 is the vouch-shaped statement specified from that ask",
       "trust-tasks-tf `vtc/join-requests/manifest/0.2`: `VettingRequirements` (`minStatements`, `minByMethod`, `eligibleVetters.role`, `independence`), `ext` and `extCritical`",
       "general #31 (stormer78 2026-08-26): the Phase 4 join — invite, vouches, identity check",
-      "record 023 — the sibling admission statement over member-issued relationship credentials"
+      "record 023 — the sibling admission statement over member-issued relationship credentials",
+      "trust-tasks-tf PR #618 (stormer78 2026-09-23, merged): 'the four tasks hidden-vetter admission needs' — pcs-root, pcs-tokens, vetting/attestation, pcs-challenge; three decisions for review: the drip is unconditional; `vetting/attestation` declares `identifierScope: any` and a consumer MUST NOT record the delivering issuer beside it; dates not timestamps on the attested validity window. 'Implemented against these schemas in both halves of a VTC deployment'",
+      "trust-tasks-tf PR #620 (stormer78 2026-09-23, merged): `vtc/vetting/vetters/event-mode/0.1` — not self-service, not a bigger number under the same key, not free; the response carries a count (`groupSize`, `groupFloor`), never a group",
+      "trust-tasks-tf PR #603 (2026-09-22, merged): `vtc/vetting/vetters/show/0.1` — by-DID vetter status (`live`/`revoked`/`expired`/`none`, `listed`); the answer is not evidence and costs the same whatever the status; the spec half of OpenVTC VTI #1651",
+      "OpenVTC/governance PR #25 (stormer78 2026-09-24) 'adding PCS' → `OpenVTC/predicate-credential-system` (public; README only at `e6a7bd3`)",
+      "OpenVTC/predicate-credential-system main 4f4edf5 (2026-09-28): the PCS source, MIT, with sizes asserted by tests and the pcs-vetting-prototype demo — option 1 now names a revision; figures are constructor-reported until a run on independent hardware (state stays constructed)",
+      "cred-spec PR #70 (merged 2026-09-30) with dtgwg-vsc-registry PR #19: the identity-vetting statement profile is published as the registry predicate `https://registry.trustoverip.org/dtg/vsc/vetted/1` (normative there, the specification's worked example informative); values in lowerCamelCase; `attestationTextDigest` optional. trust-tasks-tf PR #691 (stormer78 2026-09-30, draft): on the named-statement path the Vetting Statement becomes a `StatementCredential` under that predicate, vetter eligibility a community-issued authority credential (`actions: [\"role:vetter\"]`, `maxAttenuation: 0`), and `eligibleVetters.role` is matched as `role:<role>`. This record's path issues no signed statement; what it reads from that change is the eligible-vetter set, whose source credential changes type, not meaning"
     ],
     "commit": "github.com/mitchuski/dtgwg-zkp-mage"
   },
@@ -203,6 +213,26 @@
       "date": "2026-09-23",
       "by": "mitchuski",
       "note": "formal model built (Lean, composed from the gadget library); no state change"
+    },
+    {
+      "date": "2026-09-27",
+      "by": "mitchuski",
+      "note": "the framework side of option 1 landed in public: five Trust Tasks (pcs-root, pcs-tokens, vetting/attestation, pcs-challenge, event-mode; trust-tasks-tf PR #618/#620, 2026-09-23) and a public OpenVTC repository for the PCS (README only). Issuance lines carry the wire; the challenge line carries its shape; a does-not-establish line and a horizon line for the event-label anonymity set; option 1 renamed to what it is. No figures yet; state unchanged."
+    },
+    {
+      "date": "2026-09-29",
+      "by": "mitchuski",
+      "note": "PR #11 inline review on 023 (DenisPopov15, 28 Sept) read across: does-not-establish line for the 007 bypass under option 1; 023's blind-signature rows now point here. Figures still held. State unchanged."
+    },
+    {
+      "date": "2026-09-29",
+      "by": "mitchuski",
+      "note": "PCS source public at OpenVTC/predicate-credential-system 4f4edf5 (28 Sept): option 1 pinned to that revision with the README sizes (1,392 B proof at k = 5) as constructor-reported, running times not recorded; provenance line. State unchanged (constructed, unmeasured)."
+    },
+    {
+      "date": "2026-09-30",
+      "by": "mitchuski",
+      "note": "the named-statement path beside this record moved to registry predicates (cred-spec PR #70, registry `vetted/1`; trust-tasks-tf PR #691 in draft): the eligible-vetter set is derived from community-issued authority credentials rather than role endorsements. Provenance only; no clause, option or figure changes. State unchanged."
     }
   ],
   "formal": {

@@ -84,7 +84,8 @@
     "the invitation or the identity check — the VIC and the vetting statement are presented as credentials beside this proof, not proven inside it (the vetting statement's PASS limits carry: cred-spec PR #50)",
     "that the community will admit the applicant — the proof's outcome is one input to the community's policy engine; verifying it, accepting it under policy and issuing the VMC are three acts (WG-04)",
     "what the VRCs say beyond naming the applicant as subject — attributes, scopes and the relationship's own terms are outside the statement",
-    "that a community's admission path mints the witness this record needs — an admission that issues no relationship credentials has no VRC to prove over; record 024 states the hidden-vetting statement such a path can run"
+    "that a community's admission path mints the witness this record needs — an admission that issues no relationship credentials has no VRC to prove over; record 024 states the hidden-vetting statement such a path can run",
+    "a commitment in the applicant's identifier — under the blind-signature (PCS) route the voucher linkage is bound to an enrolment secret inside the credential system and no DID verification-method commitment (component 007, WG-14) is exercised; nothing ties the proof to the applicant's DID beyond what the credential itself binds. Whether the admission path must satisfy 007 is a Round 2 question (PR #11 review, 2026-09-28)"
   ],
   "adversary": [
     {
@@ -134,10 +135,10 @@
   },
   "options": [
     {
-      "construction": "Berkeley's reference code for the admission proof — the construction being built for the Linux Plumbers integration (per Arka Rai Choudhuri; Glenn Gore integrating), named by the chair as the constructor; link, proving system and measured figures to be recorded when the code is public",
-      "cost": "unmeasured here; to be filled from the reference code's own figures with revision and workload named",
+      "construction": "blind-signature admission — the construction the chair named on PR #11 (Berkeley, Glenn Gore integrating) and the blind-signature vouch of the 2026-09-08 call are one construction: membership by possession of a blind signature rather than by Merkle inclusion, which is the Predicate Credential System (PCS) and is record 024's option 1 with the five public Trust Tasks as its issuance lines. Recorded there, not here: 024 admits on k distinct attestations from a hidden vetter set; this record admits on k distinct vouching members of a known set over relationship credentials, and its own constructions are membership ones. Under the PCS route the voucher linkage rests on a secret bound at enrolment inside the credential system, so component 007 is bypassed rather than satisfied (see does-not-establish)",
+      "cost": "not recorded here — see record 024 option 1 (PCS source public at OpenVTC/predicate-credential-system 4f4edf5 since 2026-09-28; sizes constructor-reported, unmeasured)",
       "measured": false,
-      "source": "zkp-spec PR #11 (ScottJeezey 2026-09-21); ePrint 2026/333 and its forthcoming community follow-up (the 8 September call)"
+      "source": "zkp-spec PR #11 inline review (DenisPopov15 2026-09-28) folding the two rows; the chair on PR #11 (2026-09-21); DTG ZKP TF call 2026-09-08 (Sanjam Garg); record 024 · OpenVTC/predicate-credential-system 4f4edf5"
     },
     {
       "construction": "Groth16 / BN254 / Poseidon composition — k parallel instances of record 010's clauses 1–3, 6, 7 (VRC authenticity, voucher membership, voucher linkage, non-revocation) sharing one holder-binding clause (004), one distinctness clause over the k leaves (005) and one transcript binding (003); the applicant's own membership clause of 010 dropped, since the applicant is not a member",
@@ -150,12 +151,6 @@
       "cost": "zero",
       "measured": false,
       "source": "general #31 (the flow as drawn); a community policy that requires knowing its vouchers"
-    },
-    {
-      "construction": "blind-signature vouch — each voucher blind-signs at vouch time and the applicant later proves possession of k unblinded signatures from distinct members (record 010's option 5, applied k times); composition with the membership and non-revocation clauses is the open design question",
-      "cost": "unmeasured — no construction published",
-      "measured": false,
-      "source": "DTG ZKP TF call 2026-09-08 (Sanjam Garg)"
     }
   ],
   "issuance": [
@@ -205,6 +200,11 @@
       "date": "2026-09-23",
       "by": "mitchuski",
       "note": "formal model built (Lean, composed from the gadget library); no state change"
+    },
+    {
+      "date": "2026-09-29",
+      "by": "mitchuski",
+      "note": "PR #11 inline review (DenisPopov15, 28 Sept): options 0 and 3 folded into one blind-signature option that points to record 024; new does-not-establish line for the 007 bypass under that route; figures unchanged (none recorded). State unchanged."
     }
   ],
   "formal": {

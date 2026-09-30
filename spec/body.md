@@ -1,4 +1,4 @@
-<!-- generated-from: records-sha256=01b4e776e2a2dae7cce575a4682923a079a06d17721a1702ba29d4e0d2254b40 — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
+<!-- generated-from: records-sha256=46705739930693972feed63cea867071c126091c314863c789e55247135b1edc — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
 
 <!-- generated-section:requests:start -->
 ## Requests Answered
@@ -566,6 +566,7 @@ Rejection codes: `transcript-digest-mismatch`, `bare-nonce-insufficient`
 - decision §15 canonical transcript
 - cred-spec #17 item 1 (JCS)
 - 2026-09-14 predicate-binding probe over runtimes/canonical/canonical.mjs (sha256 d50fd9a3…): four assertions — equal/NFC-vs-NFD/v1-vs-v2/unknown-accepted; encoding evidence, not registry-aware verification (peer-lane research cycle 2026-09-14-vocabulary-binding)
+- cred-spec #52 and #48 CLOSED 2026-09-28 (cred-spec PR #64, merged): a predicate is identified by `https://registry.trustoverip.org/dtg/vsc/<name>/<n>` — an integer revision per predicate — and the registry is `trustoverip/dtgwg-vsc-registry`; its first community profiles `vetted/1` and `presented/1` were admitted as drafts on 2026-09-30 (registry PR #19; cred-spec PR #70). The identifier a transcript binds now has a concrete form and a revision inside the string; which identifiers a verifier accepts is still the profile's
 - registry: 0002–0006
 - commit: github.com/mitchuski/dtgwg-zkp-mage
 
@@ -583,6 +584,7 @@ Revisions within a state:
 |---|---|---|
 | 2026-09-14 | mitchuski | cred-spec #52 (predicate registry): negative-space line — binding an identifier does not make it accepted or meaningful; probe cited in provenance. State unchanged (constructed). |
 | 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+| 2026-09-30 | mitchuski | cred-spec #52/#48 closed (28 Sept): the predicate identifier has a registry form with the revision in the IRI, and a registry to resolve it against. Provenance line only; the negative-space line of 14 Sept stands as written (binding an identifier does not make it accepted). State unchanged (constructed). |
 
 #### Formal verification
 
@@ -1156,6 +1158,7 @@ A verifier that holds a trust-task context learns that the presented credential 
 - that the trust task completed, or what was done in it — completion evidence is a framework artifact outside any credential (the artifact gap, cred-tf #39/#40)
 - that the binder's plaintext is not held elsewhere — the framework holds it in the Trust Task documents; this record blinds only the copy the credential carries
 - durable-versus-task-dependent status of the claim (Outcome Interpretability is the credential layer's statement, not this proof's)
+- unlinkability of the presentations in which a detached citation is shown (cred-spec #58): the citation is a stable (credential digest, taskContext) pair under the issuer's signature; shown to two verifiers it links those two presentations exactly as a visible C would — the holder's choice of when to show it is the whole privacy of the detached design, and this record does not add to it
 
 #### Adversary, per claim
 
@@ -1181,13 +1184,13 @@ Rejection codes: `binder-mismatch (unsat: C does not open to the supplied taskCo
 
 | construction | cost | status | source |
 |---|---|---|---|
-| route 1 — proposed salted-commitment opening using available primitives; no record-specific measured implementation | unmeasured — one Poseidon opening, conjecture ≈ 250–300 constraints (~70%) | unmeasured | runtimes/canonical + runtimes/circom-gadget |
+| route 1 — proposed salted-commitment opening using available primitives; no record-specific measured implementation — superseded at the credential layer by the detached citation (cred-spec #58, 2026-09-25); kept as the shape a profile that must carry a committed form in-credential would use | unmeasured — one Poseidon opening, conjecture ≈ 250–300 constraints (~70%) | unmeasured | runtimes/canonical + runtimes/circom-gadget |
 | route 2 — PRF-derived per-context pseudonym (the record-002 nullifier construction with the context descriptor as domain) | the lab's domain-tagged nullifier: measured inside the 11,523-constraint gadget; standalone unmeasured | unmeasured | runtimes/circom-gadget (nullifier binds context; record 002) |
 
 #### Issuance requirements
 
-- issuers carry a committed form of the exchange citation in place of the plaintext pair — under cred-spec PR #56 that pair is `taskContext` (the initiating document's `id`) and `taskDigestMultibase` (its task digest), both durable correlators of the credential across presentations; this is a change to cred-spec §The `taskContext` Property and §The `taskDigestMultibase` Property, and the one member this record asks the credential layer for. Filed against the credential specification as issue #58 on 2026-09-21 (the review asked that it be an issue the Credentials TF can schedule; PR #18 is parked and is not it)
-- C is digestMultibase-encoded (WD02 D-A) so both layers agree on the encoding
+- the credential carries no exchange citation at all — under the detached-citation proposal on cred-spec #58 (stormer78, the Trust Tasks editor, 2026-09-25; bmiller59 +1) `taskContext` and `taskDigestMultibase` leave the credential for a separate issuer-signed citation document (working name `credential-citation/0.1`: `credentialDigestMultibase` · `taskContext` · `taskDigestMultibase`; bearer; one per credential; `parentThreadId` MUST NOT be carried) that the holder shows only to a verifier that needs completion. That retires the committed-form ask this record filed as #58 on 2026-09-21 and meets the at-rest half of the statement with no proof: there is nothing in the credential to open. A proof that must reference the exchange (route 2) reads the citation as witness, never the credential. Context timing: the `v2` context at the Implementers Draft (#48 versioning plan)
+- should a profile ever carry a committed form inside a credential, C is digestMultibase-encoded (WD02 D-A) so both layers agree on the encoding
 - the framework (Trust Tasks) commits to the taskContext in a form the proof can open — 'we can only blind what the framework gives us a committed form of' (ScottJeezey, cred-tf #39)
 - Specify generation, distribution and retention of the secret blinding value; do not publish it beside a low-entropy plaintext-hiding commitment.
 
@@ -1202,6 +1205,9 @@ Rejection codes: `binder-mismatch (unsat: C does not open to the supplied taskCo
 - cred-spec PR #56 (albertoleon7794, 2026-09-17, open): `taskContext` becomes the initiating document's `id` (not the threadId) and gains `taskDigestMultibase`, the task digest of that document, taken with `proof` removed — a sixth digest-valued member, and a second plaintext correlator beside the first
 - zkp-spec PR #8 review (geoffturk, 2026-09-16, the credential maintainer's reading of the interface): this record is scoped to the trust-task binder; the five digest-valued members of cred-spec #38 are record 022; the taskContext change is to be filed against the credential specification as an issue
 - cred-spec #58 (filed 2026-09-21): a committed form of the trust-task citation — what the credential layer decides (placement, member names, encoding, retention of the blinding value, pairing with outcome evidence) and what stays here
+- cred-spec #58 (stormer78 2026-09-25, as Trust Tasks editor): resolve #58 by a detached citation — the credential stops carrying `taskContext` and `taskDigestMultibase`; the issuer signs a separate citation binding the credential's salted digest to the exchange; bearer, one per credential, no `parentThreadId`; a new Trust Task specification and a citation check in §Evidence That a Cited Exchange Completed; depends on #38's salt; fixes at-rest naming and the shared value, not repeat-presentation linkability ('that remains BBS or ZK work, record 008 route 2'); `v2` at the Implementers Draft. bmiller59 +1 (22:42 UTC); the credential maintainer's view awaited
+- cred-spec PR #56 MERGED 2026-09-22 (`taskContext` = initiating document `id` + `taskDigestMultibase`); PR #18 closed the same day; cred-spec 0.5.0 (`2f802ba`)
+- cred-spec #58 (geoffturk 2026-09-30, the credential maintainer): 'To be implemented as part of DTG Contexts v2' — the detached citation is the disposition; `taskContext` and `taskDigestMultibase` leave the credential at `v2` (the Implementers Draft), and until then a `v1` credential still carries the plaintext pair this record describes. cred-spec is at Working Draft 0.6.0 (`44d5084`)
 
 #### Record history
 
@@ -1219,6 +1225,8 @@ Revisions within a state:
 | 2026-09-13 | mitchuski | Provenance: cred-spec PR #50's salted identity commitment recorded as an instance of route 1, with its retention caveat. State unchanged. |
 | 2026-09-21 | mitchuski | Review of 2026-09-16: witness and issuance re-read against cred-spec PR #56 (initiating-document id + task digest); the #38 digest members moved to their own record, 022; the taskContext ask filed as a credential-specification issue. State unchanged. |
 | 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+| 2026-09-27 | mitchuski | cred-spec #58 answered from the framework side: a detached, issuer-signed citation replaces any citation member in the credential (stormer78 2026-09-25; bmiller59 +1). Route 1 is superseded at the credential layer — the at-rest half of the statement is met with no proof; what stays here is route 2 and the visibility of a shown citation (new does-not-establish line). Issuance line 1 rewritten; provenance; state unchanged. The record's name follows the #58 disposition when the credential maintainer rules. |
+| 2026-09-30 | mitchuski | cred-spec #58 ruled by the credential maintainer (30 Sept): detached citation, in the `v2` context. Route 1 stays superseded at the credential layer from `v2`; under `v1` the plaintext pair is still what a credential carries. Route 2 is unchanged and is what this record now holds. Provenance only; state unchanged. Whether the record is renamed for what remains is a Round 2 question (008 or 011 as the home of route 2). |
 
 #### Formal verification
 
@@ -2283,8 +2291,8 @@ Rejection codes: `reference-mismatch (unsat: no (bytes, u) opens the presented r
 
 #### Issuance requirements
 
-- the members this record covers are the five §Digest Encoding names — the member-issued VMC's `digestMultibase`, a VSC's `object.digestMultibase`, a VDC's `delegation.parent` and `delegation.accepts`, a VAC's `authority.parent` — and, once cred-spec PR #56 merges, `taskDigestMultibase` as a sixth; record 008 covers the trust-task citation itself
-- the hashed representation of a referenced credential must contain a salt the proof can treat as a witness; the proof-side preference is the first option above (a salt member inside the referenced credential), because it blinds every reference at once, moves with the credential, and changes neither the referencing credential nor the encoding — the disposition is #38's
+- the members this record covers are the five §Digest Encoding names — the member-issued VMC's `digestMultibase`, a VSC's `object.digestMultibase`, a VDC's `delegation.parent` and `delegation.accepts`, a VAC's `authority.parent` — and, under cred-spec #58's detached citation (2026-09-25), the citation document's `credentialDigestMultibase`, a digest over the salted credential, in place of the `taskDigestMultibase` member PR #56 (merged 2026-09-22) put in the credential; record 008 covers the citation itself
+- the hashed representation of a referenced credential must contain a salt the proof can treat as a witness; the proof-side preference is the first option above (a salt member inside the referenced credential), because it blinds every reference at once, moves with the credential, and changes neither the referencing credential nor the encoding — the disposition is #38's — adopted in that shape on #38 (stormer78 2026-09-25; bmiller59 +1): a REQUIRED top-level `salt` on every DTG credential, exactly 32 bytes from a CSPRNG, fresh per credential, base-58-btc multibase, covered by the digest and the proof; mandatory-disclosure under selective-disclosure suites; no change to §Digest Encoding; defined from the `v2` context at the Implementers Draft and not emitted under `v1`
 - content-binding references (acknowledgement, acceptance, statement object) must stay bound to the exact content they name: a salted digest preserves that binding, a re-randomizable commitment would not without a further opening
 - chain references (a VDC's and a VAC's `parent`) are re-checked by the verifier against the parent presented, so a profile may leave them unsalted where the whole chain is disclosed, and must salt them where a chain is proven without disclosure (records 020 and 021)
 - the encoding of the reference is unchanged: Multibase base-58-btc over a Multihash of the salted digest, compared as decoded bytes, as §Digest Encoding requires
@@ -2298,6 +2306,10 @@ Rejection codes: `reference-mismatch (unsat: no (bytes, u) opens the presented r
 - cred-spec PR #56 (open, 2026-09-17): `taskDigestMultibase` — a task digest over the initiating document, the same encoding, a sixth member
 - zkp-spec PR #8 review (geoffturk 2026-09-16, request 3): give #38 a record, widen 008 or open a sibling; the disposition stays on #38
 - records 020 and 021: the chain clauses already read `parent` inside the relation; this record is the opening they compose
+- cred-spec #38 (stormer78 2026-09-25): settle the first tracked question now — a `salt` member inside the hashed block of every DTG credential, 'matching record 022's preferred placement'; REQUIRED; 32 bytes CSPRNG; base-58-btc; mandatory-disclosure under `ecdsa-sd-2023`/BBS; out of scope: presentation linking and blinding the VSC `predicate` (stay with this task force); profile-defined digests (`cardDigestMultibase`, `identityCommitment`, `attestationTextDigest`) must reference something salted or say why guessing is no concern. bmiller59 +1 (22:42 UTC). Timing per #48: `v2`
+- cred-spec #58 (stormer78 2026-09-25): the detached citation's `credentialDigestMultibase` is a digest over the salted credential — 'only safe from guessing if the credential carries a `salt`' — so this record's option 1 is what makes the citation unguessable by a party holding exchange records alone
+- cred-spec #48 (geoffturk 2026-09-25; stormer78, bmiller59 +1): context `https://registry.trustoverip.org/dtg/context/v1` (byte-frozen; digest pinned normatively) and vocabulary `https://registry.trustoverip.org/dtg/credentials#`; `v1` = 0.5.0 shape + `issuerScope` (#46); one `v2` at the Implementers Draft carries `salt` (#38) and drops `taskContext`/`taskDigestMultibase` (#58); dtgwg-vsc-registry PR #7 open
+- cred-spec #38 (geoffturk 2026-09-30, the credential maintainer): 'To be implemented as part of DTG Contexts v2' — the REQUIRED in-credential `salt` lands with the `v2` context at the Implementers Draft; under `v1` the digest-valued members remain unsalted and the enumeration this record describes still applies. cred-spec #48 closed via PR #64 (2026-09-28): the context, vocabulary and predicate IRIs are in the specification text
 - commit: github.com/mitchuski/dtgwg-zkp-mage
 
 #### Record history
@@ -2312,6 +2324,8 @@ Revisions within a state:
 | date | by | note |
 |---|---|---|
 | 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+| 2026-09-27 | mitchuski | cred-spec #38 adopted this record's option 1 as written — a REQUIRED in-credential `salt`, 32 bytes, base-58-btc, mandatory-disclosure under SD suites, `v2` timing (stormer78 2026-09-25; bmiller59 +1); nothing for the proof side to change. The sixth-member line narrows: `taskDigestMultibase` leaves the credential under #58 and the citation's `credentialDigestMultibase` takes its place. Provenance carries the #48 context decision. State unchanged. |
+| 2026-09-30 | mitchuski | cred-spec #38 ruled by the credential maintainer (30 Sept): option 1 lands in the `v2` context. Until `v2`, a `v1` credential's digest references are still enumerable, which is the horizon an implementer should read. Provenance only; state unchanged. |
 
 #### Formal verification
 
@@ -2401,6 +2415,7 @@ The issuing community learns that the applicant — the subject named in a pendi
 - that the community will admit the applicant — the proof's outcome is one input to the community's policy engine; verifying it, accepting it under policy and issuing the VMC are three acts (WG-04)
 - what the VRCs say beyond naming the applicant as subject — attributes, scopes and the relationship's own terms are outside the statement
 - that a community's admission path mints the witness this record needs — an admission that issues no relationship credentials has no VRC to prove over; record 024 states the hidden-vetting statement such a path can run
+- a commitment in the applicant's identifier — under the blind-signature (PCS) route the voucher linkage is bound to an enrolment secret inside the credential system and no DID verification-method commitment (component 007, WG-14) is exercised; nothing ties the proof to the applicant's DID beyond what the credential itself binds. Whether the admission path must satisfy 007 is a Round 2 question (PR #11 review, 2026-09-28)
 
 #### Adversary, per claim
 
@@ -2425,10 +2440,9 @@ Rejection codes: `voucher-not-member (unsat: a VRC issuer with no grant leaf und
 
 | construction | cost | status | source |
 |---|---|---|---|
-| Berkeley's reference code for the admission proof — the construction being built for the Linux Plumbers integration (per Arka Rai Choudhuri; Glenn Gore integrating), named by the chair as the constructor; link, proving system and measured figures to be recorded when the code is public | unmeasured here; to be filled from the reference code's own figures with revision and workload named | unmeasured | zkp-spec PR #11 (ScottJeezey 2026-09-21); ePrint 2026/333 and its forthcoming community follow-up (the 8 September call) |
+| blind-signature admission — the construction the chair named on PR #11 (Berkeley, Glenn Gore integrating) and the blind-signature vouch of the 2026-09-08 call are one construction: membership by possession of a blind signature rather than by Merkle inclusion, which is the Predicate Credential System (PCS) and is record 024's option 1 with the five public Trust Tasks as its issuance lines. Recorded there, not here: 024 admits on k distinct attestations from a hidden vetter set; this record admits on k distinct vouching members of a known set over relationship credentials, and its own constructions are membership ones. Under the PCS route the voucher linkage rests on a secret bound at enrolment inside the credential system, so component 007 is bypassed rather than satisfied (see does-not-establish) | not recorded here — see record 024 option 1 (PCS source public at OpenVTC/predicate-credential-system 4f4edf5 since 2026-09-28; sizes constructor-reported, unmeasured) | unmeasured | zkp-spec PR #11 inline review (DenisPopov15 2026-09-28) folding the two rows; the chair on PR #11 (2026-09-21); DTG ZKP TF call 2026-09-08 (Sanjam Garg); record 024 · OpenVTC/predicate-credential-system 4f4edf5 |
 | Groth16 / BN254 / Poseidon composition — k parallel instances of record 010's clauses 1–3, 6, 7 (VRC authenticity, voucher membership, voucher linkage, non-revocation) sharing one holder-binding clause (004), one distinctness clause over the k leaves (005) and one transcript binding (003); the applicant's own membership clause of 010 dropped, since the applicant is not a member | unmeasured for the complete statement; roughly k × the voucher-side share of record 010 plus one shared binding — component figures cannot be added into a measurement | unmeasured | this record's composition of 001 · 003 · 004 · 005 · 006 · 007; record 010's option 1 |
 | vouchers disclosed — the applicant presents the k VRCs and the vouchers' membership evidence in the clear; the community checks distinctness and membership against its registry. No proof; the privacy claims above do not apply | zero | unmeasured | general #31 (the flow as drawn); a community policy that requires knowing its vouchers |
-| blind-signature vouch — each voucher blind-signs at vouch time and the applicant later proves possession of k unblinded signatures from distinct members (record 010's option 5, applied k times); composition with the membership and non-revocation clauses is the open design question | unmeasured — no construction published | unmeasured | DTG ZKP TF call 2026-09-08 (Sanjam Garg) |
 
 #### Issuance requirements
 
@@ -2464,6 +2478,7 @@ Revisions within a state:
 |---|---|---|
 | 2026-09-23 | mitchuski | doesNotEstablish line added from the formal model: no clause excludes a self-vouch by an applicant who is already a member; the refusal is placed on the admission check; no state change |
 | 2026-09-23 | mitchuski | formal model built (Lean, composed from the gadget library); no state change |
+| 2026-09-29 | mitchuski | PR #11 inline review (DenisPopov15, 28 Sept): options 0 and 3 folded into one blind-signature option that points to record 024; new does-not-establish line for the 007 bypass under that route; figures unchanged (none recorded). State unchanged. |
 
 #### Formal verification
 
@@ -2556,6 +2571,8 @@ The issuing community learns that k pairwise-distinct eligible vetters of the li
 - any relationship between the applicant and the vetters — no relationship credential (VRC) is involved; a policy requiring a VRC pair with the vetters would disclose what this proof withholds
 - that proof acceptance enforces the complete admission policy: per-method floors, independence caps, statement validity and eligibility checks belong to the named policy evaluator. The lab harness checks total tag count and returns method facts; it does not implement the complete evaluator
 - that sequential replay tests establish concurrent or durable single-use behavior: the ledger must atomically prevent additional counting across requests, retries and restarts; the current asynchronous lab harness requires further review
+- the size of the anonymity set under an event label: a spend under `event-mode` narrows 'some vetter in this community' to 'some vetter at this event'; the framework's three mitigations — group floor, expiry, an `eventId` that names a gathering — are all MUST for the consumer (trust-tasks-tf PR #620) and bound that narrowing; the proof does not
+- a commitment in the applicant's identifier — the PCS binds voucher and attestation linkage to an enrolment secret inside the credential system, not to a DID verification-method commitment; component 007 (WG-14) is bypassed by this route, and a community admitting over it gets no 007 property (PR #11 review, 2026-09-28)
 
 #### Adversary, per claim
 
@@ -2566,6 +2583,7 @@ The issuing community learns that k pairwise-distinct eligible vetters of the li
 
 - earliest of: the vetter-set period · the vetter-set commitment in force (a vetter removed from the set cannot attest under the new commitment) · each statement's validity and the criterion's `maxStatementAge` · the requirements digest's `requirementsGrace`
 - the challenge — single use: spent when the proof is counted, so an applicant answering `requestMore` obtains a fresh challenge
+- under an event label, the event's expiry — tokens live and die with their label, so an event's stockpile cannot be spent under the monthly key (trust-tasks-tf PR #620)
 
 #### Conformance fixtures
 
@@ -2579,7 +2597,7 @@ Rejection codes: `tag-duplicate (two attestations from one vetter)`, `token-seri
 
 | construction | cost | status | source |
 |---|---|---|---|
-| the construction the chair named on PR #11 for the Linux Plumbers integration (Berkeley, with Glenn Gore integrating) — not public; its construction and figures are recorded here when its authors publish them | not recorded | unmeasured | zkp-spec PR #11 (ScottJeezey 2026-09-21) |
+| the construction the chair named on PR #11 for the Linux Plumbers integration (Berkeley, with Glenn Gore integrating) — the Predicate Credential System (PCS): Σ-PS (Pointcheval–Sanders) credential base with the key-injective PRF Tag_DDH over BLS12-381, generalized Schnorr proofs under strong Fiat–Shamir; the applicant proves it holds attestations from k pairwise-distinct credentialed vetters, none of them itself, and receives a credential. SOURCE PUBLIC since 2026-09-28: OpenVTC/predicate-credential-system (MIT, arkworks 0.6, research artifact, not audited) at main 4f4edf5 — crate plus the demo pcs-vetting-prototype (Σ-PS + Tag_DDH; end-to-end tests: admission from two hidden vetters with no member id or vetter id in the facts; requestMore then resubmission counts once; one vetter counts once across submissions; a double-spent token does not count and the VTC cannot name anyone). Its five Trust Tasks are public (issuance lines; trust-tasks-tf PR #618/#620, 2026-09-23). Under this route the attestation linkage is bound to the vetter secret usk inside the credential system, not to a DID verification-method commitment (component 007 bypassed — see does-not-establish) | constructor-reported, from the repository README and asserted by its tests (fixed-format encoding over BLS12-381, not measured here): Σ-PS attestation 240 B, proof 1,392 B at k = 5, credential 96 B; Σ-BBS 416 / 2,272 / 112 B; Σ-EQ 480 / 2,512 / 192 B. Running times: criterion benches exist (benches/pcs.rs at k = 5) but no figures are published in the repository; the ~12 ms prove-and-verify quoted in review is unsourced here and is not recorded | unmeasured | OpenVTC/predicate-credential-system main 4f4edf5 (2026-09-28: import, demo, CI) — README §Instantiations, docs/testing-and-benchmarks.md, demo/README.md · zkp-spec PR #11 (ScottJeezey 2026-09-21) · trust-tasks-tf PR #618 and PR #620 (stormer78 2026-09-23) · OpenVTC/governance PR #25 (2026-09-24) · zkp-spec PR #11 inline review (DenisPopov15 2026-09-28/29: options 0 and 3 of record 023 are this construction; a local run of a reference flow confirmed, on a commit not on any public branch, so the record pins the public main) |
 | vetters named — the named path: each vetter issues a signed vetting statement and the community counts vetter DIDs. No proof; the privacy claims above do not apply | zero | unmeasured | trust-tasks-tf `vtc/join-requests/manifest/0.2` (VettingRequirements) |
 | Groth16 / BN254 / Poseidon (lab) — each vetter proves its own attestation (vetting_attest: leaf of the vetter-set root, tag = Poseidon(tag, secret, applicantId), serial = Poseidon(tag, secret, period, slot) with slot < cap, statement bound) and the applicant proves one binding (vetting_bind: applicantId from the applicant secret, transcript over the challenge, requirements digest, join DID and every attestation). The tag must come from the vetter's secret — a tag derived from anything public the community could recompute for every vetter — and the applicant does not hold vetters' secrets, so the route takes k + 1 proofs. Removing one vetter is a new root with nobody re-enrolled; the cap is per vetter and in-circuit, with no token issuance; tag distinctness is checked by the community over the public tags; clause 7 is not built | vetting_attest 5,677 constraints, vetting_bind 238 (--O2); one attestation proof ~813 ms, made by each vetter at its own time, the binding ~123 ms (snarkjs/wasm, Node 22, win32/x64); community verification at k = 5 ~110 ms; submission at k = 5 1,376 B with compressed points (2,144 B uncompressed), computed from point sizes, 7,009 B as snarkjs JSON; lab-only trusted setup (one contributor, fixed entropy) | **measured** | evidence repository runtimes/circom-gadget/test-vetting.mjs, run 2026-09-23 — H1–H12 12/12 |
 
@@ -2587,10 +2605,11 @@ Rejection codes: `tag-duplicate (two attestations from one vetter)`, `token-seri
 
 - the community publishes the eligible-vetter set, live-period policy and selected cap profile. A secret-derived profile specifies a stable enrolled secret and bounded slots per accounting interval. A transferable-token profile specifies the exact vetter set, total issuance budget, quota/tick rules, token expiry and carry-over treatment; it does not imply a cap on each holder
 - the criterion publishes its parameters under `vetting.ext` in a namespace the community controls and names that namespace in `vetting.extCritical` (trust-tasks-tf `vtc/join-requests/manifest/0.2`), so a client that does not implement it refuses instead of gathering named statements
-- the community mints a challenge per applicant, keeps it, and spends it when the proof is counted
+- the community mints a challenge per applicant, keeps it, and spends it when the proof is counted — the wire is `vtc/vetting/pcs-challenge/0.1` (trust-tasks-tf PR #618, merged 2026-09-23): the challenge is 16 bytes as lowercase hex, compared for equality and never parsed; at most one open challenge per applicant (asking again replaces it); an `expiresAt`; spent when the proof is counted; a community that publishes no hidden-vetting criterion answers `notHiddenVetting`; the request carries a proof so no one consumes another applicant's open challenge
 - no signed vetting statement and no relationship credential is issued on this path
 - the requirements digest binds the cap profile, community, accounting interval and policy parameters. Define the serial namespace and identity of an identical spend; ledger updates and counting must be atomic and durable. An acknowledged retry adds neither a spend nor an attestation, and does not reuse a consumed challenge
 - name the admission policy evaluator and version: it applies per-method floors, independence caps, validity and eligibility rules to verified facts before a separate issuance decision. Assign these checks explicitly when the proof harness does not implement them
+- the vetter side of option 1 has a public wire (trust-tasks-tf PR #618 and PR #620, merged 2026-09-23): `vtc/vetting/vetters/pcs-root/0.1` — enrolment for a class label; the community checks a live vetter grant, no credential under this label yet and the identifier this member was bound to, then signs a commitment it cannot open · `vtc/vetting/vetters/pcs-tokens/0.1` — one tick of an unconditional token drip at the community's published rate (a fetch that happened only when someone was busy would announce that they were busy; the quota is the community's to refuse) · `vetting/attestation/0.1` — vetter to applicant, the facts of the session with no issuer; `identifierScope: any`; the applicant MUST NOT record the delivering `issuer` beside it; dates, not timestamps, on the validity window · `vtc/vetting/vetters/event-mode/0.1` — a separate token label for a named event with its own rate, expiry and a group floor, requested by the vetter and approved by someone else (no Trust Task for the approval, by design). These are the framework's obligations behind clauses 2–5 and the challenge; the proof reads their outputs as witness and adds nothing to their semantics
 
 #### Provenance
 
@@ -2598,6 +2617,12 @@ Rejection codes: `tag-duplicate (two attestations from one vetter)`, `token-seri
 - trust-tasks-tf `vtc/join-requests/manifest/0.2`: `VettingRequirements` (`minStatements`, `minByMethod`, `eligibleVetters.role`, `independence`), `ext` and `extCritical`
 - general #31 (stormer78 2026-08-26): the Phase 4 join — invite, vouches, identity check
 - record 023 — the sibling admission statement over member-issued relationship credentials
+- trust-tasks-tf PR #618 (stormer78 2026-09-23, merged): 'the four tasks hidden-vetter admission needs' — pcs-root, pcs-tokens, vetting/attestation, pcs-challenge; three decisions for review: the drip is unconditional; `vetting/attestation` declares `identifierScope: any` and a consumer MUST NOT record the delivering issuer beside it; dates not timestamps on the attested validity window. 'Implemented against these schemas in both halves of a VTC deployment'
+- trust-tasks-tf PR #620 (stormer78 2026-09-23, merged): `vtc/vetting/vetters/event-mode/0.1` — not self-service, not a bigger number under the same key, not free; the response carries a count (`groupSize`, `groupFloor`), never a group
+- trust-tasks-tf PR #603 (2026-09-22, merged): `vtc/vetting/vetters/show/0.1` — by-DID vetter status (`live`/`revoked`/`expired`/`none`, `listed`); the answer is not evidence and costs the same whatever the status; the spec half of OpenVTC VTI #1651
+- OpenVTC/governance PR #25 (stormer78 2026-09-24) 'adding PCS' → `OpenVTC/predicate-credential-system` (public; README only at `e6a7bd3`)
+- OpenVTC/predicate-credential-system main 4f4edf5 (2026-09-28): the PCS source, MIT, with sizes asserted by tests and the pcs-vetting-prototype demo — option 1 now names a revision; figures are constructor-reported until a run on independent hardware (state stays constructed)
+- cred-spec PR #70 (merged 2026-09-30) with dtgwg-vsc-registry PR #19: the identity-vetting statement profile is published as the registry predicate `https://registry.trustoverip.org/dtg/vsc/vetted/1` (normative there, the specification's worked example informative); values in lowerCamelCase; `attestationTextDigest` optional. trust-tasks-tf PR #691 (stormer78 2026-09-30, draft): on the named-statement path the Vetting Statement becomes a `StatementCredential` under that predicate, vetter eligibility a community-issued authority credential (`actions: ["role:vetter"]`, `maxAttenuation: 0`), and `eligibleVetters.role` is matched as `role:<role>`. This record's path issues no signed statement; what it reads from that change is the eligible-vetter set, whose source credential changes type, not meaning
 - commit: github.com/mitchuski/dtgwg-zkp-mage
 
 #### Record history
@@ -2614,6 +2639,10 @@ Revisions within a state:
 | 2026-09-23 | mitchuski | clause 4 loosened to admit blind, transferable serials capped per vetter set, alongside serials derived from the vetter's secret; doesNotEstablish line added for the per-vetter cap (decision gate DG-024-4, zkbook/DECISION-024-clause4.md); no state change |
 | 2026-09-23 | mitchuski | Local draft: align witness, public inputs, disclosure, issuance and fixtures with the two cap profiles; distinguish idempotent acknowledgement from double counting and identify external policy and atomic-ledger obligations. No state promotion or task-force adoption; no new runtime or formal conformance claim. |
 | 2026-09-23 | mitchuski | formal model built (Lean, composed from the gadget library); no state change |
+| 2026-09-27 | mitchuski | the framework side of option 1 landed in public: five Trust Tasks (pcs-root, pcs-tokens, vetting/attestation, pcs-challenge, event-mode; trust-tasks-tf PR #618/#620, 2026-09-23) and a public OpenVTC repository for the PCS (README only). Issuance lines carry the wire; the challenge line carries its shape; a does-not-establish line and a horizon line for the event-label anonymity set; option 1 renamed to what it is. No figures yet; state unchanged. |
+| 2026-09-29 | mitchuski | PR #11 inline review on 023 (DenisPopov15, 28 Sept) read across: does-not-establish line for the 007 bypass under option 1; 023's blind-signature rows now point here. Figures still held. State unchanged. |
+| 2026-09-29 | mitchuski | PCS source public at OpenVTC/predicate-credential-system 4f4edf5 (28 Sept): option 1 pinned to that revision with the README sizes (1,392 B proof at k = 5) as constructor-reported, running times not recorded; provenance line. State unchanged (constructed, unmeasured). |
+| 2026-09-30 | mitchuski | the named-statement path beside this record moved to registry predicates (cred-spec PR #70, registry `vetted/1`; trust-tasks-tf PR #691 in draft): the eligible-vetter set is derived from community-issued authority credentials rather than role endorsements. Provenance only; no clause, option or figure changes. State unchanged. |
 
 #### Formal verification
 
@@ -2673,9 +2702,9 @@ A proving-system entry records facts a reader can check — proof system, field,
 | verifier | per system |
 | licence | BSD-2-Clause (catalog repo); per-entry `source.license` field — citable; artifacts stay in the catalog, the book cites entry ids |
 | audit | 'Every circuit here is experimental and unvetted' |
-| maturity | experimental catalog — 14 entries (manifest v1, 2026-09-05): 10 Longfellow libzk v1 (systemVersion 6/7/8, 1–4 attributes, ~300 KB each) + 4 vega-mc P-256 keys (r11 deprecated, r12 active, 135–157 MB) |
+| maturity | experimental catalog — 14 entries (manifest v1 generated 2026-08-27; read 2026-09-05 and again 2026-09-29, unchanged): 10 Longfellow libzk v1 (systemVersion 6/7/8, 1–4 attributes, ~300 KB each) + 4 vega-mc P-256 keys (r11 deprecated, r12 active, 135–157 MB) |
 | independent implementations | 0 |
-| provenance | repo: https://github.com/sirosfoundation/go-zk-circuits · manifest: https://api.circuits.siros.org/v1/manifest.json · version: manifestVersion 1 · entrySchema: id · aliases · system · systemVersion · docTypes · published · status · params · artifact{url, sha256, size, zstd, uncompressed} · source{origin, toolchain, license, openSource} · publishedAt · notes · content-addressed |
+| provenance | repo: https://github.com/sirosfoundation/go-zk-circuits · manifest: https://api.circuits.siros.org/v1/manifest.json · version: manifestVersion 1 · entrySchema: id · aliases · system · systemVersion · docTypes · published · status · params · artifact{url, sha256, size, zstd, uncompressed} · source{origin, toolchain, license, openSource} · publishedAt · notes · readAt: 2026-09-29 · candidateArtifact: [object Object] · content-addressed |
 | verified | 2026-09-05 — api.circuits.siros.org/v1/manifest.json, go-zk-circuits README |
 
 #### Published figures (the proving system's own, or the evidence repository's — never this specification's)
@@ -3010,7 +3039,7 @@ This section is informative.
 
 ### Normative References
 
-- **[DTG-CRED]** DTG Credentials Core Specification, Version 1.0, Document Status **Working Draft 0.4.0** — the minimum compatible Document Status for this draft (see Introduction, *Relationship to other specifications*). Read at `main` commit `994a3d63fe27d77ca6023f5a4aae8013272a6646` (2026-09-15: semantic versioning adopted, the VSC merged, the VDC, VAC and correlation-scope text). Sections are cited by title; the glossary is cross-referenced as the external specification `DTG_CRED`. The exact revision an implementation profile pins remains a profile decision. Trust over IP Foundation. <https://trustoverip.github.io/dtgwg-cred-spec/> · source: <https://github.com/trustoverip/dtgwg-cred-spec>
+- **[DTG-CRED]** DTG Credentials Core Specification, Version 1.0, Document Status **Working Draft 0.4.0** — the minimum compatible Document Status for this draft (see Introduction, *Relationship to other specifications*). Read at `main` commit `994a3d63fe27d77ca6023f5a4aae8013272a6646` (2026-09-15: semantic versioning adopted, the VSC merged, the VDC, VAC and correlation-scope text). Re-read on 2026-09-30 at Document Status Working Draft 0.6.0, `main` commit `44d5084` (the registry IRIs for the context, the vocabulary and the predicates; `issuerScope`; the identity-vetting example aligned with the registry predicate `vetted/1`): every section title cited in this draft resolves there. Sections are cited by title; the glossary is cross-referenced as the external specification `DTG_CRED`. The exact revision an implementation profile pins remains a profile decision. Trust over IP Foundation. <https://trustoverip.github.io/dtgwg-cred-spec/> · source: <https://github.com/trustoverip/dtgwg-cred-spec>
 - **[DTG-ZKP-RULES]** Drafting rules of the DTG ZKP Task Force. <https://github.com/trustoverip/dtgwg-zkp-tf/blob/main/DRAFTING-RULES.md>
 - **[RFC2119]** S. Bradner, "Key words for use in RFCs to Indicate Requirement Levels", BCP 14, RFC 2119, March 1997. <https://datatracker.ietf.org/doc/html/rfc2119>
 - **[RFC8785]** A. Rundgren, B. Jordan, S. Erdtman, "JSON Canonicalization Scheme (JCS)", RFC 8785, June 2020. <https://datatracker.ietf.org/doc/html/rfc8785>
