@@ -1,4 +1,4 @@
-<!-- generated-from: records-sha256=ff7786b0adc8280949d795a498645ca63435a455bd20cdd3cef2c77be31089fe — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
+<!-- generated-from: records-sha256=80c2d395ab29372992cdf6427e5d070bb6828539d1ea6134268a17e4e2e40d90 — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
 
 <!-- generated-section:requests:start -->
 ## Requests Answered
@@ -62,7 +62,7 @@ Status: **covered** (the record carries it as written) · **refined** (carried w
 | T4 | registry | a registry's obligations are stated as an interface so any conformant registry can serve these proofs | — (Trust Registry TF) | **open** |  |
 | D1 | deployment | proving is feasible on the devices that hold credentials — a phone or an agent — within a stated time and memory budget | 010 options (Groth16 est. ≈35–45k constraints ~2 s; blackbox 0.03 s/vouch) · stacks layer (ProveKit phone numbers) | **partial** | budgets not yet stated by the TF; the options layer supplies measured numbers per stack for the gate to set them |
 | D2 | deployment | verification is cheap enough to run inline | lab: ~8–10 ms verify (Groth16) | **covered** |  |
-| D3 | deployment | a proof fits the transports DTG credentials already travel over | stacks layer: proof size column (721 B Groth16 vs ~716 KB WHIR) | **open** | a profile decision; the options table shows both numbers |
+| D3 | deployment | a proof fits the transports DTG credentials already travel over | stacks layer: proof size column (721 B Groth16 vs ~716 KB WHIR) | **open** | a profile decision; the options table shows both numbers. Proposed resolution (WG-18, 2026-10-12): D3 is met for a profile whose transport carries task payloads of a megabyte or more, as Trust Tasks does; a proof of a few hundred kilobytes from a hash-based prover is within budget, and a sub-kilobyte proof is not a V1 requirement |
 | X1 | conformance | published test vectors covering proofs that must verify and proofs that must fail | 010 conformance fixtures families · runtimes/fixtures format (accept/reject/lint vectors, rejection-reason register) | **partial** | format exists and is consumed cross-language; 010's own vector family not yet cut |
 | X2 | conformance | an independent implementation can verify another's proofs | registry (independent reproduction) · consumer-py (zero-shared-code consumer) | **partial** | reproduced for records 001/002/003/005; 010 composition not yet built |
 | X3 | conformance | any requirement on how credentials are issued is stated explicitly and early | 010 issuance (ZK-friendly signature or published commitment; issuer linkage MAY) · cred-spec #17 | **covered** |  |
@@ -287,6 +287,11 @@ A verifier learns that the holder's credential commitment is a leaf of a publish
 - root cryptoperiod (root rotation)
 - VMC validity
 
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: none inside the relation: hash membership holds under Grover at 256-bit output; the root's authenticity is the registry signature's, checked outside the proof — a curve-signed root is forgeable, a post-quantum-signed root is not; the KZG accumulator option: pairing-based binding falls
+- confidentiality: none — a leaf commitment and a proof hide the path and the secret information-theoretically under the hash-based options; the Groth16 lab proof is perfectly zero-knowledge
+
 #### Conformance fixtures
 
 Families: `accepts` · `rejects-unsat` · `rejects-verify`
@@ -415,6 +420,11 @@ A verifier learns a deterministic nullifier for this context so a second present
 - epoch rollover
 - enrolment-root cryptoperiod
 
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: none inside the relation: a Poseidon or standard-hash PRF keeps pseudorandomness; the paper's PRF_K route likewise
+- confidentiality: none from the nullifier itself; a holder secret of fewer than 256 bits of entropy loses half its bits to Grover
+
 #### Conformance fixtures
 
 Families: `accepts` · `rejects-unsat` · `unlinkable`
@@ -538,6 +548,11 @@ A verifier checks that the proof binds the supplied transcript scalar. Interpret
 #### Horizon
 
 - the transcript's own validity window
+
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: none: the digest is collision-resistant under Grover; binding a Groth16 public signal falls with Groth16 soundness, a hash-based prover's binding does not
+- confidentiality: none — the transcript is public by design
 
 #### Conformance fixtures
 
@@ -664,6 +679,11 @@ A verifier learns that the presenting key is derived from the same secret the cr
 - key cryptoperiod
 - credential validity
 
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: the EdDSA / Baby-Jubjub in-circuit option: a discrete-log key, falls; the PRF-image form of the relation does not; the paper's Schnorr proof of PRF-key ownership falls as a Schnorr proof over a group; the statement survives under a hash-based proof
+- confidentiality: none — the presentation key is a PRF image and the secret is hidden information-theoretically
+
 #### Conformance fixtures
 
 Families: `accepts` · `rejects-unsat`
@@ -775,6 +795,11 @@ A verifier learns that two credentials in one proof come from two distinct membe
 #### Horizon
 
 - root cryptoperiod
+
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: none inside the relation: distinctness over hash leaves or tags holds
+- confidentiality: none
 
 #### Conformance fixtures
 
@@ -898,6 +923,11 @@ A verifier learns that the credential's nullifier is not in the revocation set a
 
 - status freshness (C4 bound)
 - epoch rollover
+
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: none inside the relation; the status root's authenticity is the registry signature's, outside the proof — the set-root primitive's signed root must carry a post-quantum suite; the RL-membership-inside-f route inherits the enclosing proof system's soundness
+- confidentiality: none
 
 #### Conformance fixtures
 
@@ -1027,6 +1057,11 @@ A verifier checks that two identifiers appearing in DTG credentials — as subje
 
 - under a derived-key profile, the shorter of the two identifiers' key-validity periods — after a rotation the old key no longer opens to s under the recorded path and the clause must be re-proven against the rotated material; under the commitment-verification-method profile, a signing-key rotation leaves the commitment, and this clause, untouched — only a change of the secret behind the commitment restarts it (Integration §Rotation under the identifier commitment profile; record 025)
 - the hash/commitment cryptoperiod of the derivation
+
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: none inside the relation: two hash openings sharing a secret hold; a Pedersen or KZG commitment in place of the hash opening falls (binding), as does a BabyJubJub or BLS12-381 SNARK-native key as the identifier's own key — the hash-commitment form of the identifier commitment profile is the post-quantum form
+- confidentiality: none — hiding is information-theoretic in every option
 
 #### Conformance fixtures
 
@@ -1174,6 +1209,11 @@ A verifier that holds a trust-task context learns that the presented credential 
 - route 2: the context descriptor's epoch; the pseudonym rotates with it
 - the commitment's hash cryptoperiod
 
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: none inside the relation: route 1 opens a hash commitment, route 2 a PRF image; the binder's own authenticity is the issuer signature's (X3)
+- confidentiality: none from the proof; a visible unsalted binder is enumerable today and Grover halves the enumeration cost (record 022)
+
 #### Conformance fixtures
 
 Families: `accepts` · `rejects-unsat` · `rejects-verify` · `unlinkable`
@@ -1309,6 +1349,11 @@ A verifier learns that a hidden field of one authenticated credential equals a h
 
 - the shorter of the two credentials' validity periods — the equality is a statement about two credentials as issued, and a re-issued credential must be re-compared
 - the hash/commitment cryptoperiod of the leaf or field commitments the openings are made against
+
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: none inside the relation under the Poseidon-openings option; the as-signed option inherits ECDSA / Ed25519 — the compared fields are authenticated by signatures that become forgeable
+- confidentiality: none
 
 #### Conformance fixtures
 
@@ -1458,6 +1503,11 @@ A maintainer checks authenticated evidence of a relationship between two distinc
 
 - earliest of: VRC validity · either VMC validity · epoch rollover · status freshness (C4 bound) · root_C cryptoperiod
 
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: clause 1 (signature-verify) under any curve suite — eddsa-jcs-2022, SPS on BLS12-381, EdDSA on Baby Jubjub — falls: forged VRCs satisfy the clause; the published-commitment branch of X3 with a post-quantum-signed root replaces it; the blackbox option (Gro15 SPS, hiding KZG, Groth–Sahai) falls entirely; the legacy-rails option inherits ECDSA / Ed25519; the blind-signature vouch option inherits its signature scheme; the Groth16 composition's soundness falls; the post-quantum route (Flock-class over standard hashes) does not, on its hash side
+- confidentiality: none — hidden membership paths, secrets and voucher identities stay hidden under every option; the proof is zero-knowledge information-theoretically in the Groth16 and hash-based options
+
 #### Conformance fixtures
 
 Families: `accepts` · `rejects-unsat` · `rejects-verify` · `unlinkable` · `current`
@@ -1603,6 +1653,11 @@ A verifier learns that two disclosed persona identifiers (declared `directed`) h
 - VRC validity
 - status freshness
 
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: clause 1 (signature-verify) under a curve suite falls; the Groth16 composition with an in-circuit signature check falls with both the signature and the proof system; the paper's Construction II show inherits its pairing-based credential
+- confidentiality: none
+
 #### Conformance fixtures
 
 Families: `accepts` · `rejects-verify` · `unlinkable`
@@ -1728,6 +1783,11 @@ A verifier learns that the k credentials in front of it — memberships, relatio
 #### Horizon
 
 - earliest of: any shown credential's validity · epoch rollover · the shortest identifier key-validity among the k (record 007)
+
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: none inside the relation beyond record 007's: hash openings hold; the enclosing records' signature clauses are where the exposure sits
+- confidentiality: none — a proof of common control discloses one bit to one verifier and, information-theoretically, nothing more
 
 #### Conformance fixtures
 
@@ -1856,6 +1916,11 @@ Each party to a proposed cross-community edge learns that the counterparty's com
 
 - earliest of: each community's policy root version, the prover's membership root epoch, and the exchange challenge
 - the exchange itself: an unanswered exchange expires with its challenge; a new exchange needs new commitments
+
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: none inside the relation: hash membership against policy and membership roots and a hash opening; each root's authenticity is its community's signature, outside the proof
+- confidentiality: none — the two predicates' commitments hide information-theoretically; the exchange reveals only what step one publishes
 
 #### Conformance fixtures
 
@@ -1988,6 +2053,11 @@ A verifier learns that the presenting agent holds a delegation chain rooted at a
 
 - the shortest validUntil in the chain
 - status freshness
+
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: clause 3 (every hop's countersignature verifies) under a curve suite falls: a forged acceptance satisfies the chain; the committed-hop form — each hop a commitment in a post-quantum-signed registry — is the replacement, and it is a credential-specification change; a recursive or folding proof per hop built on a pairing-based verifier falls; a hash-based recursion does not
+- confidentiality: none — the undisclosed chain stays hidden
 
 #### Conformance fixtures
 
@@ -2141,6 +2211,11 @@ A verifier learns that the presenting party holds authority to perform action X 
 - status freshness for links that carry `credentialStatus` (the governing party's freshness window)
 - root_G cryptoperiod
 
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: clause 3 (every link verifies as signed by its issuer) under a curve suite falls; the committed-link form in a post-quantum-signed registry is the replacement; a recursive or folding proof per link built on a pairing-based verifier falls; a hash-based recursion does not
+- confidentiality: none — the undisclosed chain stays hidden
+
 #### Conformance fixtures
 
 Families: `accepts` · `rejects-unsat` · `rejects-verify`
@@ -2274,6 +2349,11 @@ A verifier learns that a digest-valued reference carried by a presented credenti
 - the salt's confidentiality: the claim fails for any party that holds u and the schema — the referencing credential's holder, the referenced credential's holder, and whoever either gave the salt to; the disposition on #38 decides who those are
 - the digest function: opening a SHA-256 digest in-circuit is the cost horizon of route 2; a profile that permits another Multihash algorithm changes the gadget, not the record
 - the validity horizon of the enclosing record — this record adds none of its own
+
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: none inside the relation: a salted hash opening holds; the SNARK-native Pedersen commitment option falls (binding) and the Poseidon one does not
+- confidentiality: none from the proof; a salt shorter than 256 bits loses half its bits to Grover — ETSI's guidance for salted-hash credentials is to double the salt
 
 #### Conformance fixtures
 
@@ -2429,6 +2509,11 @@ The issuing community learns that the applicant — the subject named in a pendi
 
 - earliest of: each VRC's validity · each voucher's membership validity · epoch rollover · status freshness (the community's published bound) · root_C cryptoperiod
 - the join request's own validity — a proof bound to a withdrawn or decided request (Trust Tasks `vtc/join-requests/withdraw`, `decide`) is not replayable to the next one
+
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: clause 1 (each VRC verifies) under a curve suite falls; the blind-signature admission option (PCS, Σ-PS over BLS12-381) falls entirely — credential, Schnorr proofs and tag injectivity; the Groth16 composition falls with its proof system; vouchers-disclosed is a signature check in the clear and falls with the signature
+- confidentiality: under option 1 the Tag_DDH pseudonym stream becomes linkable once DDH falls — with record 024 option 1, the one confidentiality exposure in this catalogue; under the hash-based options, none
 
 #### Conformance fixtures
 
@@ -2586,6 +2671,11 @@ The issuing community learns that k pairwise-distinct eligible vetters of the li
 - earliest of: the vetter-set period · the vetter-set commitment in force (a vetter removed from the set cannot attest under the new commitment) · each statement's validity and the criterion's `maxStatementAge` · the requirements digest's `requirementsGrace`
 - the challenge — single use: spent when the proof is counted, so an applicant answering `requestMore` obtains a fresh challenge
 - under an event label, the event's expiry — tokens live and die with their label, so an event's stockpile cannot be spent under the monthly key (trust-tasks-tf PR #620)
+
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: option 1 (PCS: Σ-PS credential base, Tag_DDH, Schnorr proofs over BLS12-381) falls entirely — a quantum vetter forges credentials and opens its tag to any value, so once-per-tick counting stops holding; option 3 (the lab's hash-based vetting_attest and vetting_bind) holds on the hash side and falls only with Groth16's soundness, which a hash-based prover removes; option 2 (vetters named) falls with the vetters' signatures
+- confidentiality: option 1: harvested tags become linkable to vetter keys once DDH falls; options 2 and 3: none
 
 #### Conformance fixtures
 
@@ -2751,6 +2841,11 @@ The issuing community learns that the presenter holds the secret behind an unrev
 - the root epoch: the replacement leaf presents once the community publishes a root containing it, and the old secret stops presenting once the spent-tag set the enclosing records read contains t
 - the commitment, hash and PRF cryptoperiod
 
+*Quantum horizon* — read against Security Considerations item 8:
+
+- forgery: none inside the relation: Poseidon commitments, a Poseidon PRF and hash membership hold; the DID method's own rotation (option 3) is as strong as its signature suite; a pre-rotation digest is a hash and holds
+- confidentiality: none
+
 #### Conformance fixtures
 
 Families: `accepts` · `rejects-unsat` · `rejects-verify` · `unlinkable`
@@ -2819,6 +2914,8 @@ A proving-system entry records facts a reader can check — proof system, field,
 | field | as required by the signed document's curve (P-256) |
 | setup | per artifact — the catalog pins downloaded artifacts by sha256, not builds |
 | post-quantum | no (ECDSA rails) |
+| post-quantum soundness | plausible for the Ligero-class argument (SHA-256 only); the statement proven is an ECDSA signature, so credential soundness falls with ECDSA |
+| post-quantum zero-knowledge | holds |
 | credential model | as-signed: proves statements over credentials exactly as issuers already issue them — no issuer change, no commitment choice; this is substrate for the legacy-rails route, not a DTG construction route |
 | platforms | as published per artifact |
 | verifier | per system |
@@ -2866,6 +2963,8 @@ A proving-system entry records facts a reader can check — proof system, field,
 | field | binary fields (GF(2^k) towers) — no prime-field arithmetic, no elliptic curve in the prover |
 | setup | transparent — no trusted setup, no toxic waste |
 | post-quantum | plausibly post-quantum: security rests on hash functions; designed for the hash-based signature schemes (Lamport, Winternitz, XMSS) Ethereum's post-quantum transition targets |
+| post-quantum soundness | plausible — hash and random-oracle assumptions over binary fields; the family most exposed to the 2025–26 proximity-gap results, so a cost row states the bound its parameters assume |
+| post-quantum zero-knowledge | plausible — as stated by the authors; a zero-knowledge variant's parameters are part of the measurement contract |
 | credential model | Candidate backend for batched standard-hash computation. Author-reported hash benchmarks are not end-to-end measurements of DTG membership, revocation, transcript or signature verification; compatibility depends on the selected registry and credential profile. |
 | platforms | rust · x86_64 · apple-silicon |
 | verifier | local · server |
@@ -2922,6 +3021,8 @@ A proving-system entry records facts a reader can check — proof system, field,
 | field | BN254 scalar field |
 | setup | transparent for the WHIR proof; the Groth16 wrapper reintroduces a trusted setup |
 | post-quantum | hash-based core — migration path plausible; the pairing-based wrapper is not |
+| post-quantum soundness | plausible for the Spartan + WHIR core (hash and random-oracle assumptions; the proximity-gap bound the parameters assume is to be stated); falls at the Groth16 wrapper — a verifier that sees only the wrapper holds a non-post-quantum proof |
+| post-quantum zero-knowledge | holds for the core and for the wrapper (Groth16 is perfectly zero-knowledge) |
 | credential model | issuer-agnostic: any statement Noir expresses; shipped statements prove over existing credentials (passport, WebAuthn) as signed |
 | platforms | rust · javascript-wasm (~340 KB) · swift (iOS) · kotlin (Android) · python · c-ffi |
 | verifier | local · server · browser · on-chain (Groth16 wrapper) |
@@ -2974,6 +3075,8 @@ A proving-system entry records facts a reader can check — proof system, field,
 | field | BN254 scalar field; Baby Jubjub for in-circuit keys (planned) |
 | setup | trusted setup per circuit — lab-only fixed-entropy setup, unusable for production, reproducible from a clean clone; production ceremony = an open item |
 | post-quantum | no — pairing-based; migration path is a different stack (LIV-ALG-07) |
+| post-quantum soundness | falls — knowledge soundness rests on pairing-group assumptions; a cryptographically relevant quantum computer recovers the setup trapdoor and forges proofs |
+| post-quantum zero-knowledge | holds — perfect zero-knowledge; a harvested proof discloses nothing to a quantum adversary |
 | credential model | issuer-chosen commitments: Poseidon leaf commitments; ZK-friendly signatures or an additional Poseidon/KZG commitment beside the credential signature (X3) |
 | platforms | node · browser-wasm (snarkjs) · x86_64 · darwin-arm64 |
 | verifier | local · server · browser · on-chain (Solidity verifier) |
@@ -3025,7 +3128,7 @@ This section is informative.
 5. **Common control.** Under the Credentials Core Specification's three correlation scopes, two `pairwise` identifiers of one party differ by construction. A construction that reads one party out of two credentials must prove common control of both identifiers (construction 007) or rely on the party having declared one `directed` identifier; a presenter cannot prove a counterparty's common control without the counterparty's witness or attestation. The identifiers concerned may appear as credential subject or as credential issuer — the VRC-issuer case is statement 3 of construction 010. A chain predicate is a different relation: that a child credential's `issuer` equals its parent's `credentialSubject.id` involves no holder secret and is hidden-value equality across credentials signed by different parties (construction 009, inside constructions 020 and 021), not common control; reading the two as one primitive leaves the chain predicates unspecified while appearing covered (cred-spec #9). Records that need either say so; implementations that assume either silently are unsound.
 6. **Self-vouching.** A community-anchored proof without a distinctness clause (S6) accepts a member vouching for themselves under two identifiers. The clause is added in construction 010 and is required of any implementation of that record.
 7. **Replay and transcript binding.** Every construction is bound to one canonical transcript digest. A proof presented against a different transcript is a different proof and MUST fail verification.
-8. **Post-quantum horizon.** Pairing-based constructions have no post-quantum path; hash-based proving systems do, at a cost in proof size. Each record's horizon and each proving system's entry state which applies. Suite agility requirements are those of [DTG-ZKP-REQ] §9.9.
+8. **Post-quantum horizon.** Two properties fall under a cryptographically relevant quantum computer and they are read separately. *Soundness* of pairing-based proving systems (Groth16, KZG-backed PLONK) and *unforgeability* of discrete-logarithm signatures and commitments (Ed25519, ECDSA, BLS, PS, SPS, Pedersen, KZG) fall: proofs, credentials and openings become forgeable. *Zero-knowledge* of those proof systems and *hiding* of those commitments do not fall — they are information-theoretic — so a proof or commitment harvested today discloses nothing to a quantum adversary later, and a proof verified before the break was sound when it was verified ([ETSI-TR-119476-1] §9.1). Hash-based gadgets (set membership, nullifier, transcript binding, commitment opening, hidden equality over hash commitments, holder binding as a PRF image, distinctness) keep both properties under Grover's quadratic speed-up at 256-bit output ([NIST-IR-8547] §4.1.3); hash-based transparent proving systems are plausibly post-quantum in the quantum random-oracle model ([CMS-2019]), subject to the proximity-gap bound their parameters assume ([RS-PROXIMITY-2025]). Consequences: (i) every construction record's exposure is a *forgery* exposure, forward-looking from the break, except where a correlation protection rests on DDH rather than on a hash — the Tag_DDH pseudonyms of records 023 and 024 option 1 are the one such case in this catalogue; (ii) the credential signature is the non-swappable layer: a post-quantum proof system over a pre-quantum-signed credential is a sound proof of a forgeable fact ([DTG-ZKP-TF-CALL-2026-09-08]); (iii) the issuance pattern with a post-quantum realisation at presentation cost today is the published-commitment branch of X3 — the issuer signs a root or leaf commitment with a post-quantum suite ([FIPS-204], [FIPS-205]) outside the proof and the proof verifies no signature — which is the set-root primitive of [DTG-CRED-TF-40] and the transition ETSI describes for salted-hash credentials ([ETSI-TR-119476-1] §9.3); the Trust Tasks framework already pins such suites ([DTG-TT-SPEC] §Cryptosuites) and the VTI specification defines hybrid proof sets ([DTG-VTI] VTI-KEY-103..105), while the credential specification names `eddsa-jcs-2022` alone. Each record's *quantum horizon* lists which clauses fall to forgery and which, if any, lose confidentiality; each proving-system entry states post-quantum soundness and post-quantum zero-knowledge separately; a hash-based core wrapped in a pairing-based proof is not post-quantum at the wrapper. Suite agility requirements are those of [DTG-ZKP-REQ] §9.9; the clocks a profile is held to are NIST's deprecation of ECDSA and EdDSA after 2030 and disallowance after 2035 ([NIST-IR-8547]) and the EU roadmap's end-2030 for high-risk systems. The issuance contract this implies is WG-18; the explanatory treatment is the companion guide's *Post-quantum considerations* chapter.
 
 ## Privacy Considerations
 
@@ -3196,4 +3299,13 @@ This section is informative.
 - **[OPENVTC]** OpenVTC verifiable trust infrastructure — a candidate integration target, revision to be pinned. <https://github.com/OpenVTC/verifiable-trust-infrastructure>
 - **[AKITA]** Lattice Jolt / Akita — a Module-SIS-based polynomial commitment scheme announced 2026-09-09 as a post-quantum proving route; research software, zero knowledge in a forthcoming companion paper. <https://a16zcrypto.com/posts/article/lattice-snarks-jolt-post-quantum-faster> · <https://github.com/LayerZero-Labs/akita>
 - **[LONGFELLOW-PQCA]** Google, "Donating the Longfellow ZKP library to the Post-Quantum Cryptography Alliance" (Linux Foundation Europe), 2026-09-02 — library stewardship and provenance, distinct from the SIROS catalogue's artefact provenance. <https://blog.google/products-and-platforms/platforms/google-pay/zero-knowledge-proof-library-linux-foundation/>
+- **[ETSI-TR-119476-1]** ETSI TR 119 476-1 V1.3.1 (2025-08), "Electronic Signatures and Trust Infrastructures (ESI); Analysis of selective disclosure and zero-knowledge proofs applied to Electronic Attestation of Attributes; Part 1" — clause 9 (quantum considerations): authenticity falls, unconditional privacy survives; the salted-hash transition is the signature's. <https://www.etsi.org/deliver/etsi_tr/119400_119499/11947601/01.03.01_60/tr_11947601v010301p.pdf>
+- **[NIST-IR-8547]** NIST IR 8547 (initial public draft, 2024-11), "Transition to Post-Quantum Cryptography Standards" — Table 2: ECDSA, EdDSA and RSA deprecated after 2030, disallowed after 2035; §4.1.3 hashes at ≥128-bit remain Category 1. <https://nvlpubs.nist.gov/nistpubs/ir/2024/NIST.IR.8547.ipd.pdf>
+- **[FIPS-204]** NIST FIPS 204 (2024-08), "Module-Lattice-Based Digital Signature Standard" (ML-DSA). <https://csrc.nist.gov/pubs/fips/204/final>
+- **[FIPS-205]** NIST FIPS 205 (2024-08), "Stateless Hash-Based Digital Signature Standard" (SLH-DSA). <https://csrc.nist.gov/pubs/fips/205/final>
+- **[W3C-DI-QR]** W3C, "Quantum-Resistant Cryptosuites v1.0", First Public Working Draft 2026-06-16 — ML-DSA, SLH-DSA, Falcon and SQIsign Data Integrity suites with selective-disclosure variants; no unlinkability; experimental. <https://www.w3.org/TR/2026/WD-vc-di-quantum-resistant-1.0-20260616/>
+- **[CMS-2019]** A. Chiesa, P. Manohar, N. Spooner, "Succinct Arguments in the Quantum Random Oracle Model", TCC 2019, IACR ePrint 2019/834 — IOP-based arguments with round-by-round soundness are secure in the quantum random-oracle model. <https://eprint.iacr.org/2019/834>
+- **[RS-PROXIMITY-2025]** B. Diamond, A. Gruen, IACR ePrint 2025/2010; E. Crites, A. Stewart, "On Reed–Solomon Proximity Gaps Conjectures", IACR ePrint 2025/2046; E. Ben-Sasson, D. Carmon, U. Haböck, S. Kopparty, S. Saraf, IACR ePrint 2025/2055; M. Kambiré, arXiv 2604.09724 (2026-04) — the up-to-capacity proximity-gap conjectures are false; a parametric correction for FRI/STIR/WHIR-class systems, largest over small and binary fields. <https://eprint.iacr.org/2025/2046>
+- **[DTG-VTI]** DTG Verifiable Trust Infrastructure specification (Working Draft) — §Identity and keys: cryptosuite acceptance sets (VTI-KEY-013), hybrid proof sets and the post-quantum-aware verifier (VTI-KEY-102..105). <https://github.com/trustoverip/dtgwg-vti-spec>
+- **[DTG-TT-SPEC]** DTG Trust Tasks framework specification (Working Draft) — §Cryptosuites: `eddsa-jcs-2022` baseline, `mldsa44-jcs-2024` and `slhdsa128-jcs-2024` pinned as draft quantum-resistant suites; §Cryptosuite Downgrade. <https://github.com/trustoverip/dtgwg-trust-tasks-spec>
 - **[DTG-ZKP-TF-CALL-2026-09-08]** DTG ZKP Task Force meeting notes, 2026-09-08 (ToIP Confluence) — ADR-001 confirmed as the first proof; the blind-signature vouch alternative; the same-context pseudonym caveat; the credential signature scheme as the non-swappable choice. <https://lf-toip.atlassian.net/wiki/spaces/HOME/pages/1132953601>
