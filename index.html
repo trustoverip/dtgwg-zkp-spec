@@ -606,6 +606,9 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <p><strong>WG-02 — Discuss before implementation: issuance and witness contract.</strong> Which credential format, issuer-signature route, holder-key capability and offline linkage artifact does the first profile support? Required output: a pinned input contract and an explicit list of unavailable or unsupported inputs. Status: unresolved technical dependency.</p>
 </blockquote>
 <blockquote>
+<p><strong>WG-18 — Discuss before implementation: post-quantum issuance contract.</strong> WG-02’s issuer-signature route decides this specification’s post-quantum horizon, because the proof system is swappable by software and the credential signature is not. Two routes: (a) an issuer signature the circuit verifies; (b) an issuer signature over a published commitment or root, checked by the verifier outside the proof, with the proof covering hash membership, openings and predicates only. Only (b) has a post-quantum realisation at presentation cost today — an ML-DSA verification inside a circuit is in the millions of constraints (self-reported), against 11,523 for the lab’s whole membership proof. Required output: (b) as the first profile’s default, or a reasoned alternative; the post-quantum suite for roots and leaf commitments (ML-DSA-65, or SLH-DSA-128s for long-lived registry roots — the suites the Trust Tasks framework pins), stated as the profile’s horizon rather than a V1 blocker; the hybrid overlap rule by reference to [DTG-VTI] VTI-KEY-103…105; and a decision on ADR-001’s D3 against the measured proof size of a hash-based prover. Status: proposed 2026-10-12; no decision recorded. Source: Security Considerations item 8; the 8 September call (the credential signature scheme as the non-swappable choice).</p>
+</blockquote>
+<blockquote>
 <p><strong>WG-03 — Evidence request: construction choice.</strong> Select a common workload and target device for comparing compatible routes. Request a reproducible result for the full statement, including credential authentication and status checks. Status: no backend recommendation adopted by this draft.</p>
 </blockquote>
 <blockquote>
@@ -615,7 +618,7 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <h2 id="trust-graph-operations-and-the-first-proof" tabindex="-1"><a class="toc-anchor d-print-none" href="#trust-graph-operations-and-the-first-proof">§</a> Trust-Graph Operations and the First Proof</h2>
 <p>This section is informative. The explanatory treatment has moved to the <a href="https://trustoverip.github.io/dtgwg-zkp-tf/">companion Implementation Guide</a>. The guide and this extraction are coordinated drafts until their pull requests merge. Construction definitions and conformance remain in this specification.</p>
 <!-- file: body.md -->
-<!-- generated-from: records-sha256=ff7786b0adc8280949d795a498645ca63435a455bd20cdd3cef2c77be31089fe — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
+<!-- generated-from: records-sha256=80c2d395ab29372992cdf6427e5d070bb6828539d1ea6134268a17e4e2e40d90 — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
 <!-- generated-section:requests:start -->
 <h2 id="requests-answered" tabindex="-1"><a class="toc-anchor d-print-none" href="#requests-answered">§</a> Requests Answered</h2>
 <p>This section is informative.</p>
@@ -864,7 +867,7 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <td>a proof fits the transports DTG credentials already travel over</td>
 <td>stacks layer: proof size column (721 B Groth16 vs ~716 KB WHIR)</td>
 <td><strong>open</strong></td>
-<td>a profile decision; the options table shows both numbers</td>
+<td>a profile decision; the options table shows both numbers. Proposed resolution (WG-18, 2026-10-12): D3 is met for a profile whose transport carries task payloads of a megabyte or more, as Trust Tasks does; a proof of a few hundred kilobytes from a hash-based prover is within budget, and a sub-kilobyte proof is not a V1 requirement</td>
 </tr>
 <tr>
 <td>X1</td>
@@ -1282,6 +1285,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <li>root cryptoperiod (root rotation)</li>
 <li>VMC validity</li>
 </ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: none inside the relation: hash membership holds under Grover at 256-bit output; the root’s authenticity is the registry signature’s, checked outside the proof — a curve-signed root is forgeable, a post-quantum-signed root is not; the KZG accumulator option: pairing-based binding falls</li>
+<li>confidentiality: none — a leaf commitment and a proof hide the path and the secret information-theoretically under the hash-based options; the Groth16 lab proof is perfectly zero-knowledge</li>
+</ul>
 <h4 id="conformance-fixtures" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>rejects-verify</code></p>
 <p>Vectors: <code>runtimes/fixtures/vectors</code></p>
@@ -1519,6 +1527,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <li>epoch rollover</li>
 <li>enrolment-root cryptoperiod</li>
 </ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: none inside the relation: a Poseidon or standard-hash PRF keeps pseudorandomness; the paper’s PRF_K route likewise</li>
+<li>confidentiality: none from the nullifier itself; a holder secret of fewer than 256 bits of entropy loses half its bits to Grover</li>
+</ul>
 <h4 id="conformance-fixtures-1" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-1">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>unlinkable</code></p>
 <p>Vectors: <code>runtimes/fixtures/vectors</code></p>
@@ -1740,6 +1753,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <h4 id="horizon-2" tabindex="-1"><a class="toc-anchor d-print-none" href="#horizon-2">§</a> Horizon</h4>
 <ul>
 <li>the transcript’s own validity window</li>
+</ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: none: the digest is collision-resistant under Grover; binding a Groth16 public signal falls with Groth16 soundness, a hash-based prover’s binding does not</li>
+<li>confidentiality: none — the transcript is public by design</li>
 </ul>
 <h4 id="conformance-fixtures-2" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-2">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-verify</code></p>
@@ -1965,6 +1983,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <li>key cryptoperiod</li>
 <li>credential validity</li>
 </ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: the EdDSA / Baby-Jubjub in-circuit option: a discrete-log key, falls; the PRF-image form of the relation does not; the paper’s Schnorr proof of PRF-key ownership falls as a Schnorr proof over a group; the statement survives under a hash-based proof</li>
+<li>confidentiality: none — the presentation key is a PRF image and the secret is hidden information-theoretically</li>
+</ul>
 <h4 id="conformance-fixtures-3" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-3">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code></p>
 <p>Rejection codes: <code>key-not-derived-from-secret</code></p>
@@ -2158,6 +2181,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <h4 id="horizon-4" tabindex="-1"><a class="toc-anchor d-print-none" href="#horizon-4">§</a> Horizon</h4>
 <ul>
 <li>root cryptoperiod</li>
+</ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: none inside the relation: distinctness over hash leaves or tags holds</li>
+<li>confidentiality: none</li>
 </ul>
 <h4 id="conformance-fixtures-4" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-4">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code></p>
@@ -2381,6 +2409,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <ul>
 <li>status freshness (C4 bound)</li>
 <li>epoch rollover</li>
+</ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: none inside the relation; the status root’s authenticity is the registry signature’s, outside the proof — the set-root primitive’s signed root must carry a post-quantum suite; the RL-membership-inside-f route inherits the enclosing proof system’s soundness</li>
+<li>confidentiality: none</li>
 </ul>
 <h4 id="conformance-fixtures-5" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-5">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>current</code></p>
@@ -2612,6 +2645,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <ul>
 <li>under a derived-key profile, the shorter of the two identifiers’ key-validity periods — after a rotation the old key no longer opens to s under the recorded path and the clause must be re-proven against the rotated material; under the commitment-verification-method profile, a signing-key rotation leaves the commitment, and this clause, untouched — only a change of the secret behind the commitment restarts it (Integration §Rotation under the identifier commitment profile; record 025)</li>
 <li>the hash/commitment cryptoperiod of the derivation</li>
+</ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: none inside the relation: two hash openings sharing a secret hold; a Pedersen or KZG commitment in place of the hash opening falls (binding), as does a BabyJubJub or BLS12-381 SNARK-native key as the identifier’s own key — the hash-commitment form of the identifier commitment profile is the post-quantum form</li>
+<li>confidentiality: none — hiding is information-theoretic in every option</li>
 </ul>
 <h4 id="conformance-fixtures-6" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-6">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>rejects-verify</code> · <code>unlinkable</code></p>
@@ -2872,6 +2910,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <li>route 2: the context descriptor’s epoch; the pseudonym rotates with it</li>
 <li>the commitment’s hash cryptoperiod</li>
 </ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: none inside the relation: route 1 opens a hash commitment, route 2 a PRF image; the binder’s own authenticity is the issuer signature’s (X3)</li>
+<li>confidentiality: none from the proof; a visible unsalted binder is enumerable today and Grover halves the enumeration cost (record 022)</li>
+</ul>
 <h4 id="conformance-fixtures-7" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-7">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>rejects-verify</code> · <code>unlinkable</code></p>
 <p>Rejection codes: <code>binder-mismatch (unsat: C does not open to the supplied taskContext)</code>, <code>binder-plaintext-present (lint: credential carries taskContext in the clear beside C)</code></p>
@@ -3114,6 +3157,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <li>the shorter of the two credentials’ validity periods — the equality is a statement about two credentials as issued, and a re-issued credential must be re-compared</li>
 <li>the hash/commitment cryptoperiod of the leaf or field commitments the openings are made against</li>
 </ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: none inside the relation under the Poseidon-openings option; the as-signed option inherits ECDSA / Ed25519 — the compared fields are authenticated by signatures that become forgeable</li>
+<li>confidentiality: none</li>
+</ul>
 <h4 id="conformance-fixtures-8" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-8">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>rejects-verify</code> · <code>unlinkable</code></p>
 <p>Rejection codes: <code>hidden-values-differ (unsat: the two openings are not equal)</code>, <code>field-not-openable (verify-fail: a compared field carries no commitment the proof can open — an issuance failure, X3 applied to the compared fields)</code></p>
@@ -3345,6 +3393,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <h4 id="horizon-9" tabindex="-1"><a class="toc-anchor d-print-none" href="#horizon-9">§</a> Horizon</h4>
 <ul>
 <li>earliest of: VRC validity · either VMC validity · epoch rollover · status freshness (C4 bound) · root_C cryptoperiod</li>
+</ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: clause 1 (signature-verify) under any curve suite — eddsa-jcs-2022, SPS on BLS12-381, EdDSA on Baby Jubjub — falls: forged VRCs satisfy the clause; the published-commitment branch of X3 with a post-quantum-signed root replaces it; the blackbox option (Gro15 SPS, hiding KZG, Groth–Sahai) falls entirely; the legacy-rails option inherits ECDSA / Ed25519; the blind-signature vouch option inherits its signature scheme; the Groth16 composition’s soundness falls; the post-quantum route (Flock-class over standard hashes) does not, on its hash side</li>
+<li>confidentiality: none — hidden membership paths, secrets and voucher identities stay hidden under every option; the proof is zero-knowledge information-theoretically in the Groth16 and hash-based options</li>
 </ul>
 <h4 id="conformance-fixtures-9" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-9">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>rejects-verify</code> · <code>unlinkable</code> · <code>current</code></p>
@@ -3613,6 +3666,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <li>VRC validity</li>
 <li>status freshness</li>
 </ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: clause 1 (signature-verify) under a curve suite falls; the Groth16 composition with an in-circuit signature check falls with both the signature and the proof system; the paper’s Construction II show inherits its pairing-based credential</li>
+<li>confidentiality: none</li>
+</ul>
 <h4 id="conformance-fixtures-10" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-10">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-verify</code> · <code>unlinkable</code></p>
 <p>Rejection codes: <code>co-control-unproven</code>, <code>vrc-signature-invalid</code></p>
@@ -3832,6 +3890,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <ul>
 <li>earliest of: any shown credential’s validity · epoch rollover · the shortest identifier key-validity among the k (record 007)</li>
 </ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: none inside the relation beyond record 007’s: hash openings hold; the enclosing records’ signature clauses are where the exposure sits</li>
+<li>confidentiality: none — a proof of common control discloses one bit to one verifier and, information-theoretically, nothing more</li>
+</ul>
 <h4 id="conformance-fixtures-11" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-11">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>rejects-verify</code> · <code>unlinkable</code> · <code>current</code></p>
 <p>Rejection codes: <code>co-control-unproven</code>, <code>handle-revoked</code>, <code>show-not-declared (lint: a credential in the witness set has no disclosure declaration)</code></p>
@@ -4045,6 +4108,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <li>earliest of: each community’s policy root version, the prover’s membership root epoch, and the exchange challenge</li>
 <li>the exchange itself: an unanswered exchange expires with its challenge; a new exchange needs new commitments</li>
 </ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: none inside the relation: hash membership against policy and membership roots and a hash opening; each root’s authenticity is its community’s signature, outside the proof</li>
+<li>confidentiality: none — the two predicates’ commitments hide information-theoretically; the exchange reveals only what step one publishes</li>
+</ul>
 <h4 id="conformance-fixtures-12" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-12">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>rejects-verify</code></p>
 <p>Rejection codes: <code>half-inadmissible (unsat: the half's form is not a leaf of the counterparty's policy root)</code>, <code>membership-unproven (unsat: the form claims membership and no grant leaf exists under the prover's root)</code>, <code>commitment-mismatch (unsat: C does not open to the half the proof reads)</code>, <code>transcript-digest-mismatch (verify: the proof was made for another exchange)</code>, <code>answer-before-commitments (exchange: refused until both commitments are in)</code>, <code>reveal-before-both-yes (exchange: refused)</code>, <code>recommit-after-answer (exchange: refused)</code></p>
@@ -4256,6 +4324,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <ul>
 <li>the shortest validUntil in the chain</li>
 <li>status freshness</li>
+</ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: clause 3 (every hop’s countersignature verifies) under a curve suite falls: a forged acceptance satisfies the chain; the committed-hop form — each hop a commitment in a post-quantum-signed registry — is the replacement, and it is a credential-specification change; a recursive or folding proof per hop built on a pairing-based verifier falls; a hash-based recursion does not</li>
+<li>confidentiality: none — the undisclosed chain stays hidden</li>
 </ul>
 <h4 id="conformance-fixtures-13" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-13">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>rejects-verify</code></p>
@@ -4513,6 +4586,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <li>status freshness for links that carry <code>credentialStatus</code> (the governing party’s freshness window)</li>
 <li>root_G cryptoperiod</li>
 </ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: clause 3 (every link verifies as signed by its issuer) under a curve suite falls; the committed-link form in a post-quantum-signed registry is the replacement; a recursive or folding proof per link built on a pairing-based verifier falls; a hash-based recursion does not</li>
+<li>confidentiality: none — the undisclosed chain stays hidden</li>
+</ul>
 <h4 id="conformance-fixtures-14" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-14">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>rejects-verify</code></p>
 <p>Rejection codes: <code>action-not-conferred (unsat: X absent from the leaf's actions)</code>, <code>attenuation-widens (unsat: a link confers an action, scope or validity its parent did not)</code>, <code>attenuation-limit-exceeded (unsat: a link lies below a </code>maxAttenuation<code> bound or below a link bearing 0)</code>, <code>depth-ceiling-exceeded (unsat: more than 8 links)</code>, <code>link-issuer-mismatch (unsat: a link's issuer is not its parent's subject — record 009)</code>, <code>link-revoked (unsat at epoch)</code>, <code>root-not-governing (unsat: the root's issuer is not a leaf of root_G)</code>, <code>leaf-key-mismatch (verify-fail: the presenter's key does not derive from the leaf subject's secret)</code></p>
@@ -4748,6 +4826,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <li>the salt’s confidentiality: the claim fails for any party that holds u and the schema — the referencing credential’s holder, the referenced credential’s holder, and whoever either gave the salt to; the disposition on #38 decides who those are</li>
 <li>the digest function: opening a SHA-256 digest in-circuit is the cost horizon of route 2; a profile that permits another Multihash algorithm changes the gadget, not the record</li>
 <li>the validity horizon of the enclosing record — this record adds none of its own</li>
+</ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: none inside the relation: a salted hash opening holds; the SNARK-native Pedersen commitment option falls (binding) and the Poseidon one does not</li>
+<li>confidentiality: none from the proof; a salt shorter than 256 bits loses half its bits to Grover — ETSI’s guidance for salted-hash credentials is to double the salt</li>
 </ul>
 <h4 id="conformance-fixtures-15" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-15">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code></p>
@@ -5001,6 +5084,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <ul>
 <li>earliest of: each VRC’s validity · each voucher’s membership validity · epoch rollover · status freshness (the community’s published bound) · root_C cryptoperiod</li>
 <li>the join request’s own validity — a proof bound to a withdrawn or decided request (Trust Tasks <code>vtc/join-requests/withdraw</code>, <code>decide</code>) is not replayable to the next one</li>
+</ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: clause 1 (each VRC verifies) under a curve suite falls; the blind-signature admission option (PCS, Σ-PS over BLS12-381) falls entirely — credential, Schnorr proofs and tag injectivity; the Groth16 composition falls with its proof system; vouchers-disclosed is a signature check in the clear and falls with the signature</li>
+<li>confidentiality: under option 1 the Tag_DDH pseudonym stream becomes linkable once DDH falls — with record 024 option 1, the one confidentiality exposure in this catalogue; under the hash-based options, none</li>
 </ul>
 <h4 id="conformance-fixtures-16" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-16">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>rejects-verify</code> · <code>unlinkable</code> · <code>current</code></p>
@@ -5265,6 +5353,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <li>earliest of: the vetter-set period · the vetter-set commitment in force (a vetter removed from the set cannot attest under the new commitment) · each statement’s validity and the criterion’s <code>maxStatementAge</code> · the requirements digest’s <code>requirementsGrace</code></li>
 <li>the challenge — single use: spent when the proof is counted, so an applicant answering <code>requestMore</code> obtains a fresh challenge</li>
 <li>under an event label, the event’s expiry — tokens live and die with their label, so an event’s stockpile cannot be spent under the monthly key (trust-tasks-tf PR #620)</li>
+</ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: option 1 (PCS: Σ-PS credential base, Tag_DDH, Schnorr proofs over BLS12-381) falls entirely — a quantum vetter forges credentials and opens its tag to any value, so once-per-tick counting stops holding; option 3 (the lab’s hash-based vetting_attest and vetting_bind) holds on the hash side and falls only with Groth16’s soundness, which a hash-based prover removes; option 2 (vetters named) falls with the vetters’ signatures</li>
+<li>confidentiality: option 1: harvested tags become linkable to vetter keys once DDH falls; options 2 and 3: none</li>
 </ul>
 <h4 id="conformance-fixtures-17" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-17">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>rejects-verify</code> · <code>unlinkable</code> · <code>current</code></p>
@@ -5569,6 +5662,11 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <li>the root epoch: the replacement leaf presents once the community publishes a root containing it, and the old secret stops presenting once the spent-tag set the enclosing records read contains t</li>
 <li>the commitment, hash and PRF cryptoperiod</li>
 </ul>
+<p><em>Quantum horizon</em> — read against Security Considerations item 8:</p>
+<ul>
+<li>forgery: none inside the relation: Poseidon commitments, a Poseidon PRF and hash membership hold; the DID method’s own rotation (option 3) is as strong as its signature suite; a pre-rotation digest is a hash and holds</li>
+<li>confidentiality: none</li>
+</ul>
 <h4 id="conformance-fixtures-18" tabindex="-1"><a class="toc-anchor d-print-none" href="#conformance-fixtures-18">§</a> Conformance fixtures</h4>
 <p>Families: <code>accepts</code> · <code>rejects-unsat</code> · <code>rejects-verify</code> · <code>unlinkable</code></p>
 <p>Rejection codes: <code>replacement-not-precommitted (unsat: H(L′) ≠ N)</code>, <code>leaf-revoked (unsat: the enrolment's membership handle is revoked under rl_root)</code>, <code>rotation-tag-spent (verify-fail: t is already in the community's spent-tag set — a second rotation from one secret)</code></p>
@@ -5721,6 +5819,14 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <td>no (ECDSA rails)</td>
 </tr>
 <tr>
+<td>post-quantum soundness</td>
+<td>plausible for the Ligero-class argument (SHA-256 only); the statement proven is an ECDSA signature, so credential soundness falls with ECDSA</td>
+</tr>
+<tr>
+<td>post-quantum zero-knowledge</td>
+<td>holds</td>
+</tr>
+<tr>
 <td>credential model</td>
 <td>as-signed: proves statements over credentials exactly as issuers already issue them — no issuer change, no commitment choice; this is substrate for the legacy-rails route, not a DTG construction route</td>
 </tr>
@@ -5860,6 +5966,14 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <tr>
 <td>post-quantum</td>
 <td>plausibly post-quantum: security rests on hash functions; designed for the hash-based signature schemes (Lamport, Winternitz, XMSS) Ethereum’s post-quantum transition targets</td>
+</tr>
+<tr>
+<td>post-quantum soundness</td>
+<td>plausible — hash and random-oracle assumptions over binary fields; the family most exposed to the 2025–26 proximity-gap results, so a cost row states the bound its parameters assume</td>
+</tr>
+<tr>
+<td>post-quantum zero-knowledge</td>
+<td>plausible — as stated by the authors; a zero-knowledge variant’s parameters are part of the measurement contract</td>
 </tr>
 <tr>
 <td>credential model</td>
@@ -6052,6 +6166,14 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <td>hash-based core — migration path plausible; the pairing-based wrapper is not</td>
 </tr>
 <tr>
+<td>post-quantum soundness</td>
+<td>plausible for the Spartan + WHIR core (hash and random-oracle assumptions; the proximity-gap bound the parameters assume is to be stated); falls at the Groth16 wrapper — a verifier that sees only the wrapper holds a non-post-quantum proof</td>
+</tr>
+<tr>
+<td>post-quantum zero-knowledge</td>
+<td>holds for the core and for the wrapper (Groth16 is perfectly zero-knowledge)</td>
+</tr>
+<tr>
 <td>credential model</td>
 <td>issuer-agnostic: any statement Noir expresses; shipped statements prove over existing credentials (passport, WebAuthn) as signed</td>
 </tr>
@@ -6228,6 +6350,14 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <td>no — pairing-based; migration path is a different stack (LIV-ALG-07)</td>
 </tr>
 <tr>
+<td>post-quantum soundness</td>
+<td>falls — knowledge soundness rests on pairing-group assumptions; a cryptographically relevant quantum computer recovers the setup trapdoor and forges proofs</td>
+</tr>
+<tr>
+<td>post-quantum zero-knowledge</td>
+<td>holds — perfect zero-knowledge; a harvested proof discloses nothing to a quantum adversary</td>
+</tr>
+<tr>
 <td>credential model</td>
 <td>issuer-chosen commitments: Poseidon leaf commitments; ZK-friendly signatures or an additional Poseidon/KZG commitment beside the credential signature (X3)</td>
 </tr>
@@ -6367,7 +6497,7 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <li><strong>Common control.</strong> Under the Credentials Core Specification’s three correlation scopes, two <code>pairwise</code> identifiers of one party differ by construction. A construction that reads one party out of two credentials must prove common control of both identifiers (construction 007) or rely on the party having declared one <code>directed</code> identifier; a presenter cannot prove a counterparty’s common control without the counterparty’s witness or attestation. The identifiers concerned may appear as credential subject or as credential issuer — the VRC-issuer case is statement 3 of construction 010. A chain predicate is a different relation: that a child credential’s <code>issuer</code> equals its parent’s <code>credentialSubject.id</code> involves no holder secret and is hidden-value equality across credentials signed by different parties (construction 009, inside constructions 020 and 021), not common control; reading the two as one primitive leaves the chain predicates unspecified while appearing covered (cred-spec #9). Records that need either say so; implementations that assume either silently are unsound.</li>
 <li><strong>Self-vouching.</strong> A community-anchored proof without a distinctness clause (S6) accepts a member vouching for themselves under two identifiers. The clause is added in construction 010 and is required of any implementation of that record.</li>
 <li><strong>Replay and transcript binding.</strong> Every construction is bound to one canonical transcript digest. A proof presented against a different transcript is a different proof and MUST fail verification.</li>
-<li><strong>Post-quantum horizon.</strong> Pairing-based constructions have no post-quantum path; hash-based proving systems do, at a cost in proof size. Each record’s horizon and each proving system’s entry state which applies. Suite agility requirements are those of [DTG-ZKP-REQ] §9.9.</li>
+<li><strong>Post-quantum horizon.</strong> Two properties fall under a cryptographically relevant quantum computer and they are read separately. <em>Soundness</em> of pairing-based proving systems (Groth16, KZG-backed PLONK) and <em>unforgeability</em> of discrete-logarithm signatures and commitments (Ed25519, ECDSA, BLS, PS, SPS, Pedersen, KZG) fall: proofs, credentials and openings become forgeable. <em>Zero-knowledge</em> of those proof systems and <em>hiding</em> of those commitments do not fall — they are information-theoretic — so a proof or commitment harvested today discloses nothing to a quantum adversary later, and a proof verified before the break was sound when it was verified ([ETSI-TR-119476-1] §9.1). Hash-based gadgets (set membership, nullifier, transcript binding, commitment opening, hidden equality over hash commitments, holder binding as a PRF image, distinctness) keep both properties under Grover’s quadratic speed-up at 256-bit output ([NIST-IR-8547] §4.1.3); hash-based transparent proving systems are plausibly post-quantum in the quantum random-oracle model ([CMS-2019]), subject to the proximity-gap bound their parameters assume ([RS-PROXIMITY-2025]). Consequences: (i) every construction record’s exposure is a <em>forgery</em> exposure, forward-looking from the break, except where a correlation protection rests on DDH rather than on a hash — the Tag_DDH pseudonyms of records 023 and 024 option 1 are the one such case in this catalogue; (ii) the credential signature is the non-swappable layer: a post-quantum proof system over a pre-quantum-signed credential is a sound proof of a forgeable fact ([DTG-ZKP-TF-CALL-2026-09-08]); (iii) the issuance pattern with a post-quantum realisation at presentation cost today is the published-commitment branch of X3 — the issuer signs a root or leaf commitment with a post-quantum suite ([FIPS-204], [FIPS-205]) outside the proof and the proof verifies no signature — which is the set-root primitive of [DTG-CRED-TF-40] and the transition ETSI describes for salted-hash credentials ([ETSI-TR-119476-1] §9.3); the Trust Tasks framework already pins such suites ([DTG-TT-SPEC] §Cryptosuites) and the VTI specification defines hybrid proof sets ([DTG-VTI] VTI-KEY-103…105), while the credential specification names <code>eddsa-jcs-2022</code> alone. Each record’s <em>quantum horizon</em> lists which clauses fall to forgery and which, if any, lose confidentiality; each proving-system entry states post-quantum soundness and post-quantum zero-knowledge separately; a hash-based core wrapped in a pairing-based proof is not post-quantum at the wrapper. Suite agility requirements are those of [DTG-ZKP-REQ] §9.9; the clocks a profile is held to are NIST’s deprecation of ECDSA and EdDSA after 2030 and disallowance after 2035 ([NIST-IR-8547]) and the EU roadmap’s end-2030 for high-risk systems. The issuance contract this implies is WG-18; the explanatory treatment is the companion guide’s <em>Post-quantum considerations</em> chapter.</li>
 </ol>
 <h2 id="privacy-considerations" tabindex="-1"><a class="toc-anchor d-print-none" href="#privacy-considerations">§</a> Privacy Considerations</h2>
 <p>This section is informative. Items 1–6 are written by the editors; the numbered list that follows them is generated from the construction records’ adversary and negative-space fields and is regenerated whenever a record changes.</p>
@@ -6565,6 +6695,33 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <p><strong>[LONGFELLOW-PQCA]</strong> Google, “Donating the Longfellow ZKP library to the Post-Quantum Cryptography Alliance” (Linux Foundation Europe), 2026-09-02 — library stewardship and provenance, distinct from the SIROS catalogue’s artefact provenance. <a href="https://blog.google/products-and-platforms/platforms/google-pay/zero-knowledge-proof-library-linux-foundation/">https://blog.google/products-and-platforms/platforms/google-pay/zero-knowledge-proof-library-linux-foundation/</a></p>
 </li>
 <li>
+<p><strong>[ETSI-TR-119476-1]</strong> ETSI TR 119 476-1 V1.3.1 (2025-08), “Electronic Signatures and Trust Infrastructures (ESI); Analysis of selective disclosure and zero-knowledge proofs applied to Electronic Attestation of Attributes; Part 1” — clause 9 (quantum considerations): authenticity falls, unconditional privacy survives; the salted-hash transition is the signature’s. <a href="https://www.etsi.org/deliver/etsi_tr/119400_119499/11947601/01.03.01_60/tr_11947601v010301p.pdf">https://www.etsi.org/deliver/etsi_tr/119400_119499/11947601/01.03.01_60/tr_11947601v010301p.pdf</a></p>
+</li>
+<li>
+<p><strong>[NIST-IR-8547]</strong> NIST IR 8547 (initial public draft, 2024-11), “Transition to Post-Quantum Cryptography Standards” — Table 2: ECDSA, EdDSA and RSA deprecated after 2030, disallowed after 2035; §4.1.3 hashes at ≥128-bit remain Category 1. <a href="https://nvlpubs.nist.gov/nistpubs/ir/2024/NIST.IR.8547.ipd.pdf">https://nvlpubs.nist.gov/nistpubs/ir/2024/NIST.IR.8547.ipd.pdf</a></p>
+</li>
+<li>
+<p><strong>[FIPS-204]</strong> NIST FIPS 204 (2024-08), “Module-Lattice-Based Digital Signature Standard” (ML-DSA). <a href="https://csrc.nist.gov/pubs/fips/204/final">https://csrc.nist.gov/pubs/fips/204/final</a></p>
+</li>
+<li>
+<p><strong>[FIPS-205]</strong> NIST FIPS 205 (2024-08), “Stateless Hash-Based Digital Signature Standard” (SLH-DSA). <a href="https://csrc.nist.gov/pubs/fips/205/final">https://csrc.nist.gov/pubs/fips/205/final</a></p>
+</li>
+<li>
+<p><strong>[W3C-DI-QR]</strong> W3C, “Quantum-Resistant Cryptosuites v1.0”, First Public Working Draft 2026-06-16 — ML-DSA, SLH-DSA, Falcon and SQIsign Data Integrity suites with selective-disclosure variants; no unlinkability; experimental. <a href="https://www.w3.org/TR/2026/WD-vc-di-quantum-resistant-1.0-20260616/">https://www.w3.org/TR/2026/WD-vc-di-quantum-resistant-1.0-20260616/</a></p>
+</li>
+<li>
+<p><strong>[CMS-2019]</strong> A. Chiesa, P. Manohar, N. Spooner, “Succinct Arguments in the Quantum Random Oracle Model”, TCC 2019, IACR ePrint 2019/834 — IOP-based arguments with round-by-round soundness are secure in the quantum random-oracle model. <a href="https://eprint.iacr.org/2019/834">https://eprint.iacr.org/2019/834</a></p>
+</li>
+<li>
+<p><strong>[RS-PROXIMITY-2025]</strong> B. Diamond, A. Gruen, IACR ePrint 2025/2010; E. Crites, A. Stewart, “On Reed–Solomon Proximity Gaps Conjectures”, IACR ePrint 2025/2046; E. Ben-Sasson, D. Carmon, U. Haböck, S. Kopparty, S. Saraf, IACR ePrint 2025/2055; M. Kambiré, arXiv 2604.09724 (2026-04) — the up-to-capacity proximity-gap conjectures are false; a parametric correction for FRI/STIR/WHIR-class systems, largest over small and binary fields. <a href="https://eprint.iacr.org/2025/2046">https://eprint.iacr.org/2025/2046</a></p>
+</li>
+<li>
+<p><strong>[DTG-VTI]</strong> DTG Verifiable Trust Infrastructure specification (Working Draft) — §Identity and keys: cryptosuite acceptance sets (VTI-KEY-013), hybrid proof sets and the post-quantum-aware verifier (VTI-KEY-102…105). <a href="https://github.com/trustoverip/dtgwg-vti-spec">https://github.com/trustoverip/dtgwg-vti-spec</a></p>
+</li>
+<li>
+<p><strong>[DTG-TT-SPEC]</strong> DTG Trust Tasks framework specification (Working Draft) — §Cryptosuites: <code>eddsa-jcs-2022</code> baseline, <code>mldsa44-jcs-2024</code> and <code>slhdsa128-jcs-2024</code> pinned as draft quantum-resistant suites; §Cryptosuite Downgrade. <a href="https://github.com/trustoverip/dtgwg-trust-tasks-spec">https://github.com/trustoverip/dtgwg-trust-tasks-spec</a></p>
+</li>
+<li>
 <p><strong>[DTG-ZKP-TF-CALL-2026-09-08]</strong> DTG ZKP Task Force meeting notes, 2026-09-08 (ToIP Confluence) — ADR-001 confirmed as the first proof; the blind-signature vouch alternative; the same-context pseudonym caveat; the credential signature scheme as the non-swappable choice. <a href="https://lf-toip.atlassian.net/wiki/spaces/HOME/pages/1132953601">https://lf-toip.atlassian.net/wiki/spaces/HOME/pages/1132953601</a></p>
 </li>
 </ul>
@@ -6657,7 +6814,7 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <p>Render locally with Spec-Up-T: <code>npm install &amp;&amp; npm run render</code>; output in <code>docs/</code>, which this repository never commits.</p>
 <h3 id="appendix-b%3A-relationship-to-the-evidence-repository" tabindex="-1"><a class="toc-anchor d-print-none" href="#appendix-b%3A-relationship-to-the-evidence-repository">§</a> Appendix B: Relationship to the evidence repository</h3>
 <p>The task force keeps reference runtimes, conformance fixtures, a verification registry of independent reproductions and the working board from which construction records are promoted in a separate public repository, [DTG-ZKP-EVIDENCE]. That repository is deliberately not part of this specification: a specification should never depend on one laboratory, and a laboratory should never be mistaken for a specification. What crosses the boundary is data — records, fixtures, registry row identifiers — and the rule that nothing in this document claims more than that data shows.</p>
-<p><strong>Provenance of this revision.</strong> The generated sections carry the SHA-256 of the records they were generated from (the stamp at the head of <code>spec/body.md</code>), and this revision was exported from [DTG-ZKP-EVIDENCE] at commit <code>f540790c13c5bbe30025666efe627fabd15f44a7</code>, tag <code>untagged</code>, under which the same records, the fixtures and the registry rows they cite can be read. The evidence repository is hosted under a contributor’s account and is licensed Apache-2.0 for code and CC BY 4.0 for documents, matching the task force’s IPR posture; the conformance code shipped in this repository carries SPDX Apache-2.0 headers. Reproduction of the generated text needs only this repository; reproduction of a runtime needs the evidence repository at the pinned commit.</p>
+<p><strong>Provenance of this revision.</strong> The generated sections carry the SHA-256 of the records they were generated from (the stamp at the head of <code>spec/body.md</code>), and this revision was exported from [DTG-ZKP-EVIDENCE] at commit <code>0f7657f406ede8fa93bfd10fec748772e525fc41</code>, tag <code>untagged</code>, under which the same records, the fixtures and the registry rows they cite can be read. The evidence repository is hosted under a contributor’s account and is licensed Apache-2.0 for code and CC BY 4.0 for documents, matching the task force’s IPR posture; the conformance code shipped in this repository carries SPDX Apache-2.0 headers. Reproduction of the generated text needs only this repository; reproduction of a runtime needs the evidence repository at the pinned commit.</p>
 <blockquote>
 <p><strong>WG-12 — Discuss: home and pinning of the evidence repository.</strong> The runtimes, fixtures and verification registry this draft cites live in a contributor-hosted repository. Decide whether to mirror or transfer it under the trustoverip organisation before this draft advances beyond Working Draft, and whether each Working Draft pins a tagged evidence revision rather than a commit. Status: proposed; no group decision recorded.</p>
 </blockquote>
@@ -6665,6 +6822,9 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <p>The constructions in this specification rest on discussions in the DTG ZKP Task Force, the DTG Credentials Task Force and the DTG Credentials Core Specification repository. The editors thank Scott Jones for the working board and the work items placed on the record; Sankarshan Mukhopadhyay for the pressure tests that became negative-space clauses and for the requirements document’s v0.4 draft; Glenn Gore for ADR-001 and the delegation design note; Geoff Turk and Drummond Reed for the correlation-scope resolution and the Working Draft 02 merge plan; Brendan Miller and Alberto Leon for the privacy-seam postulate and the implementation feedback that shaped the edge-verifiability definition; Denys Popov for the construction-detail work; and the authors of [PoP-2026] for the vouchable-credential model that construction 010 leans on.</p>
 <h3 id="appendix-d%3A-changelog" tabindex="-1"><a class="toc-anchor d-print-none" href="#appendix-d%3A-changelog">§</a> Appendix D: Changelog</h3>
 <ul>
+<li>
+<p><strong>Post-quantum revision (2026-10-12)</strong> — Security Considerations item 8 rewritten to read soundness apart from zero-knowledge and forgery apart from confidentiality exposure, naming the credential signature as the non-swappable layer and the published-commitment branch of X3 as the post-quantum issuance pattern; every construction record gains a <em>quantum horizon</em> (which clauses or options fall to forgery, which lose confidentiality) rendered under its Horizon; every proving-system entry states post-quantum soundness and post-quantum zero-knowledge separately; WG-18 (post-quantum issuance contract) opened beside WG-02; ADR-001’s D3 carries a proposed resolution against hash-based proof sizes, status unchanged; references added (ETSI TR 119 476-1, NIST IR 8547, FIPS 204 and 205, W3C Quantum-Resistant Cryptosuites, Chiesa–Manohar–Spooner 2019, the 2025–26 proximity-gap results, the DTG VTI and Trust Tasks framework specifications). No record’s state changes; no construction is adopted; the companion guide gains the explanatory chapter.</p>
+</li>
 <li>
 <p><strong>Rotation revision (2026-10-02)</strong> — following the task-force discussion of the admission proof and a DID as its starting point: Integration gains <em>Rotation under the identifier commitment profile</em> (signing-key rotation, commitment refresh and secret rotation kept apart; enrolment bound to a DID once, at enrolment; no DID resolution inside a circuit) and WG-17; new composed record <strong>025</strong> (secret rotation with enrolment continuity — pre-rotation inside the enrolment leaf, a rotation tag, the old leaf retired without disclosing which it was), at <code>specified</code>, unmeasured; record 007’s horizon split by key profile; record 024 gains an issuance line for DID-rooted enrolment; privacy read across the DID log, the enrolment root and the presentations together (resolution at enrolment only, one binding per community, a DID-bound rotation is visible, rotations batched). No state promoted; nothing adopted.</p>
 </li>
@@ -6821,6 +6981,13 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
 <td>Integration (rotation under the identifier commitment profile; record 025)</td>
 <td>DID-rooted enrolment: bind enrolment secrets to a DID’s commitment verification method at enrolment; pre-rotation digests in enrolment leaves; per-context nullifiers across a secret rotation</td>
 <td>proposed 2026-10-02; no decision recorded</td>
+</tr>
+<tr>
+<td>WG-18</td>
+<td>discuss</td>
+<td>Implementation Guide (issuance contract); Security Considerations item 8</td>
+<td>post-quantum issuance contract: an issuer signature over a published commitment or root, checked outside the proof, as the first profile’s default; the post-quantum root suite as the profile’s horizon; hybrid overlap by reference to the VTI specification; D3 decided against hash-based proof sizes</td>
+<td>proposed 2026-10-12; no decision recorded</td>
 </tr>
 <tr>
 <td>WG-13</td>
@@ -6991,15 +7158,15 @@ customElements.define("slide-panels",class extends HTMLElement{static get observ
                 </div>
             </div>
             <hr id="external-ref-changes-divider" style="display: none;">
-            <p class="d-none ps-3 pe-3" id="w3c-state">W3C Recommendation, 14 October 2026</p>
+            <p class="d-none ps-3 pe-3" id="w3c-state">W3C Recommendation, 27 October 2026</p>
             <!-- Build Information Section -->
             <div class="ps-3 pe-3">
                 <p class="mb-2 fw-bold">Build Information:</p>
                 <div id="build-info" class="small text-muted">
                     <div class="d-flex align-items-center mb-1">
                         <i class="bi bi-calendar-event me-2" aria-hidden="true"></i>
-                        <time class="timestamp" datetime="2026-10-14T07:43:55.310Z">
-                            Generated: 2026-10-14T07:43:55.310Z
+                        <time class="timestamp" datetime="2026-10-27T23:19:46.829Z">
+                            Generated: 2026-10-27T23:19:46.829Z
                         </time>
                     </div>
                     <div class="d-flex align-items-center mb-1">
