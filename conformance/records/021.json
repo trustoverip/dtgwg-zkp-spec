@@ -85,7 +85,8 @@
     "chain length: the number of links is disclosed by the proof's shape unless a fixed-shape or padded profile is validated — hiding it is a profile property this record does not claim",
     "that the action was performed, or performed within scope — the invocation and its receipt are trust-task artifacts (the artifact gap)",
     "unconditional hiding from the governing party: where the root carries `credentialStatus`, the status fetch tells the root's status host that some verifier checked the chain, and when (cred-spec Privacy Considerations item 14) — a profile that fetches rl_root without a per-chain query is the mitigation, not this proof",
-    "distinct controllers along the chain: a party attenuating to itself under a second identifier satisfies every clause"
+    "distinct controllers along the chain: a party attenuating to itself under a second identifier satisfies every clause",
+    "how a hop's signature is verified while its `issuer` stays hidden: the signature-verify clause needs the hidden issuer's key and a proof that the key is that identifier's, with no DID resolved inside the circuit — a self-certifying identifier decoded in the proof, a committed identifier-to-key binding the proof opens, or an issuer-hiding signature scheme. None is selected; this is an open requirement of this record (record 009, does-not-establish)"
   ],
   "adversary": [
     {
@@ -244,6 +245,11 @@
       "date": "2026-10-27",
       "by": "mitchuski",
       "note": "formal review run 2: scope narrowed — the parent digest and the common-control route of clause 7 are not in the model (F5); no state change"
+    },
+    {
+      "date": "2026-11-19",
+      "by": "mitchuski",
+      "note": "cryptographic review of record 009 (zkp-spec #25 (DenisPopov15, 2026-11-18)) read across: verifying a hop's signature under a hidden issuer named as an open requirement. No clause changes. State unchanged."
     }
   ]
 }

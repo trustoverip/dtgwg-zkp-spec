@@ -18,7 +18,7 @@
   ],
   "publicInputs": [
     "the two identifiers exactly as the credentials carry them — or their ZK-openable commitments, when the identifiers themselves are hidden by the enclosing record",
-    "transcriptDigest — the presentation transcript this proof is bound to"
+    "transcriptDigest — the presentation transcript this proof is bound to; the binding is record 003's clause, which the enclosing record carries (does-not-establish)"
   ],
   "relation": [
     {
@@ -37,7 +37,9 @@
     "that the holder intended the two identifiers to be correlated beyond this verifier — the proof is a disclosure to the party it is made to, not a widening of either identifier's declared scope",
     "the counterparty's common control: a presenter can prove only what is derived from a secret in the presenter's hands; a counterparty's linkage needs the counterparty's witness or the counterparty's own attestation (see record 010)",
     "that arbitrary independently generated or hardware-protected keys derive from a shared available scalar; derivation and custody are profile requirements",
-    "a chain predicate: that a child credential's `issuer` equals its parent's `credentialSubject.id` across credentials signed by different parties involves no holder secret and is hidden-value equality (record 009 inside records 020 and 021), not common control — the two must not be read as one primitive (cred-spec #9, geoffturk 2026-09-10)"
+    "a chain predicate: that a child credential's `issuer` equals its parent's `credentialSubject.id` across credentials signed by different parties involves no holder secret and is hidden-value equality (record 009 inside records 020 and 021), not common control — the two must not be read as one primitive (cred-spec #9, geoffturk 2026-09-10)",
+    "that the proof is bound to its transcript by this clause alone: transcriptDigest is a public input the key-binding clause does not read, and in Groth16 a public input that appears in no constraint can be replaced after proving. The binding is record 003's clause — the circuit constrains the scalar — carried by the enclosing record, or composed with this one where it is proven on its own; a circuit for this record that leaves the input unconstrained does not conform",
+    "control of either DID: a commitment is public, and anyone can copy it into another DID document. The copier cannot open it, but the holder of s can then run this clause against a DID it does not control — the clause shows one secret behind two published commitments, and that each commitment belongs in the document it was read from is vouched for only by the DID method's document-update authority, a trust assumption of this record. Control of each identifier is key control (record 004, or a signature under the identifier's authentication key over the same transcript), which the enclosing record pairs with this one on each identifier it names"
   ],
   "adversary": [
     {
@@ -63,7 +65,8 @@
       "none inside the relation: two hash openings sharing a secret hold; a Pedersen or KZG commitment in place of the hash opening falls (binding), as does a BabyJubJub or BLS12-381 SNARK-native key as the identifier's own key — the hash-commitment form of the identifier commitment profile is the post-quantum form"
     ],
     "confidentiality": [
-      "none — hiding is information-theoretic in every option"
+      "the hash-commitment form is computationally hiding, not information-theoretic: a Poseidon commitment to (s, salt) hides s under preimage resistance — of the order of 2^127 Grover iterations for a field-sized secret, no practical loss; a Pedersen commitment is the one form listed whose hiding is information-theoretic",
+      "a SNARK-native key as the identifier's own key (pk = s·G over BabyJubJub or BLS12-381) hides nothing from a quantum attacker: Shor's algorithm recovers s from the public key, and with s every identifier and nullifier derived from it — a harvest-now, link-later exposure of anything published today. The hash-commitment form does not carry it"
     ]
   },
   "fixtures": {
@@ -75,7 +78,8 @@
     ],
     "rejectionCodes": [
       "co-control-unproven (unsat: distinct secrets)",
-      "identifier-not-zk-openable (verify-fail: identifier carries no openable commitment — an issuance failure, X3)"
+      "identifier-not-zk-openable (verify-fail: identifier carries no openable commitment — an issuance failure, X3)",
+      "commitments-equal (lint at issuance: two identifiers of one secret carry the same commitment — the salts were reused, and the identifiers are linked on their face)"
     ]
   },
   "options": [
@@ -105,7 +109,9 @@
     "a VRC MAY carry its issuer's linkage proof to its VMC-side identifier (the one-line MAY proposed on #9, 2026-08-25 and taken up 2026-09-10) — the credential layer's member, produced by the counterparty at issuance by running this record; record 010 consumes it",
     "where the commitment lives — the task force's preference, stated for the credential specification to give it a home: as a verification method in the identifier's DID document (a `Multikey` entry carrying the commitment or the SNARK-native key), not as a member of any credential. The commitment is a property of the identifier — one per identifier, shared by every credential that names it, resolved the way a verifier already resolves the signing key — so it changes no credential schema and leaves the credential layer one requirement (which DID methods can carry it) instead of a member on every type. A credential member is the fallback only for a profile whose DID method cannot carry a second verification method",
     "the WD02 example set read against this line (the credential maintainer's answer to question 2 of zkp-tf #23): `did:key` over Ed25519 carries exactly one key and cannot carry a second verification method, so an Ed25519 `did:key` identifier has no place for the commitment and cannot satisfy this record as it stands; `did:peer` (numalgo 2 and 4) and `did:webvh` can carry one. The first implementation should mint the narrow-scope identifiers that may be co-proven as `did:peer` with the commitment as a second verification method, or as `did:key` over a SNARK-native key type — and that is the first thing for it to find out (WG-14)",
-    "whether the requirement can be a MUST: yes, conditioned on the identifier's key profile rather than on a derivation the whole graph shares. The sentence should bind an identifier minted under a profile that declares co-control provable (a derivable key with a published commitment, or a SNARK-native key); a key held in a secure element with no available scalar is outside that profile, and co-control for it is established at issuance by the party who can prove it (the issuance-time attestation route of record 010) or not at all. WG-02's decision on derivation selects the first profile; it does not need to precede the sentence"
+    "whether the requirement can be a MUST: yes, conditioned on the identifier's key profile rather than on a derivation the whole graph shares. The sentence should bind an identifier minted under a profile that declares co-control provable (a derivable key with a published commitment, or a SNARK-native key); a key held in a secure element with no available scalar is outside that profile, and co-control for it is established at issuance by the party who can prove it (the issuance-time attestation route of record 010) or not at all. WG-02's decision on derivation selects the first profile; it does not need to precede the sentence",
+    "the per-identifier salts of one secret MUST differ (salt_A ≠ salt_B): equal salts publish the same commitment in two DID documents and link the identifiers with no proof involved. Each salt is 32 bytes fresh from a CSPRNG — distinctness is what unlinkability needs while s is secret, and the entropy keeps the holder's other identifiers from being enumerated if s is later exposed",
+    "under a derived-key profile the derivation is hardened: each identifier's key is a one-way function of the secret and its path, with no public-derivation relation between parent and child. Under non-hardened (BIP32-style) derivation one child private key together with the parent public key yields the parent private key, so the exposure of one identifier's key would expose s and every identifier under it"
   ],
   "provenance": {
     "spec": [
@@ -138,6 +144,11 @@
       "date": "2026-10-02",
       "by": "mitchuski",
       "note": "horizon split by key profile in answer to the task-force discussion of 2 October (a DID as the starting point; rotation): signing-key rotation does not restart the clause where the commitment is its own verification method; a secret rotation does, and record 025 carries an enrolment across it. State unchanged."
+    },
+    {
+      "date": "2026-11-19",
+      "by": "mitchuski",
+      "note": "cryptographic review (zkp-spec #25 (DenisPopov15, 2026-11-18)): the quantum-confidentiality line corrected — a hash commitment is computationally hiding, and a SNARK-native key gives up s to Shor; transcriptDigest stated as bound by record 003's clause, not by this one; issuance gains salt distinctness and hardened derivation; knowledge of the opening separated from control of the DID, with the document-update authority named as a trust assumption. The relation is unchanged. State unchanged."
     }
   ],
   "history": [
@@ -186,6 +197,13 @@
       "scope": "clause 1's key-profile condition and the WG-14 finding",
       "verdict": "refined",
       "evidence": "PR #11 review on conformance/records/007.json: an Ed25519 did:key has no space for the commitment; did:peer (numalgo 2 and 4), did:web and did:webvh — and other methods with anchoring — can carry one"
+    },
+    {
+      "by": "Denys Popov (DenisPopov15)",
+      "date": "2026-11-18",
+      "scope": "cryptographic reading of the construction: hiding under a quantum attacker, the transcript input, salts and derivation, opening versus control",
+      "verdict": "refined",
+      "evidence": "zkp-spec #25, record 007 points 1–4: all four taken — the confidentiality line was wrong as written; points 2–4 are stated as does-not-establish and issuance lines"
     }
   ]
 }
