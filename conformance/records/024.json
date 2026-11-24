@@ -29,7 +29,8 @@
     "the requirements digest of the criterion version the applicant started under",
     "the applicant's per-application identifier and join DID — disclosed by construction, since the applicant is applying",
     "the challenge — minted by the community for this applicant and spent when the proof is counted",
-    "transcriptDigest over the challenge, the requirements digest, the join DID and every attestation's public values"
+    "transcriptDigest over the challenge, the requirements digest, the join DID and every attestation's public values",
+    "under a rotation-capable profile: spent_root — the community's root over its strictly sorted spent rotation tags at the epoch (record 025, issuance)"
   ],
   "relation": [
     {
@@ -74,7 +75,7 @@
       "component": "005"
     },
     {
-      "clause": "under a rotation-capable profile (record 025), no attester's enrolment leaf has its rotation tag in the community's spent-tag set at the epoch — an attestation under a secret rotated away does not count",
+      "clause": "under a rotation-capable profile (record 025), no attester's enrolment leaf has its rotation tag in the community's spent-tag set at the epoch — an attestation under a secret rotated away does not count. Absence is proven against spent_root, the root over the strictly sorted spent tags; over an unsorted set a neighbour proof can pass for a tag that is present",
       "gadget": "non-revocation",
       "component": "025"
     }
@@ -89,7 +90,7 @@
   "doesNotEstablish": [
     "that the k attesters are k distinct people — distinct tags mean distinct vetter secrets; a vetter who hands its secret to another lets one person attest under two tags",
     "that a transferable-token budget limits each vetter: vetters can pool tokens. A per-vetter quota requires a profile that binds authorized spends to a stable enrolled secret and bounds slots, or another construction demonstrating equivalent enforcement. Neither profile bounds distinct people or prevents sharing a secret (DG-024-4)",
-    "that no attester is the applicant, in the Groth16 route — clause 7 is not built there; it holds only while applicants are outside the vetter set",
+    "that no attester is the applicant, in the Groth16 route — clause 7 is not built there and no fixture rejects a self-attestation: an applicant who is also an eligible vetter can supply one of its own k attestations. Until the clause is built the route's stated policy is that applicants are outside the eligible-vetter set (issuance); where a community cannot hold that policy it reads the criterion as k − 1 attestations from vetters other than the applicant. In any route the clause compares secrets, not people: a vetter applying under a fresh per-application secret is not distinguished from another applicant",
     "that the vetting session happened as attested — the vetter's check of the person is outside the proof, as on the named path",
     "anything to a party other than the issuing community — it keeps the vetter set and verifies the proof; no third party can audit that admission followed the criterion",
     "that the applicant is admitted — verifying the proof, counting it under policy and issuing the membership grant are three acts (WG-04)",
@@ -97,11 +98,12 @@
     "that proof acceptance enforces the complete admission policy: per-method floors, independence caps, statement validity and eligibility checks belong to the named policy evaluator. The lab harness checks total tag count and returns method facts; it does not implement the complete evaluator",
     "that sequential replay tests establish concurrent or durable single-use behavior: the ledger must atomically prevent additional counting across requests, retries and restarts; the current asynchronous lab harness requires further review",
     "the size of the anonymity set under an event label: a spend under `event-mode` narrows 'some vetter in this community' to 'some vetter at this event'; the framework's three mitigations — group floor, expiry, an `eventId` that names a gathering — are all MUST for the consumer (trust-tasks-tf PR #620) and bound that narrowing; the proof does not",
-    "a commitment in the applicant's identifier — the PCS binds voucher and attestation linkage to an enrolment secret inside the credential system, not to a DID verification-method commitment; component 007 (WG-14) is bypassed by this route, and a community admitting over it gets no 007 property (PR #11 review, 2026-09-28)"
+    "a commitment in the applicant's identifier — the PCS binds voucher and attestation linkage to an enrolment secret inside the credential system, not to a DID verification-method commitment; component 007 (WG-14) is bypassed by this route, and a community admitting over it gets no 007 property (PR #11 review, 2026-09-28)",
+    "soundness of the Groth16 route outside the lab: the lab setup has one contributor and fixed entropy, and whoever holds a setup's randomness can forge every proof of that circuit. The measurements stand; the soundness claim needs the setup a profile names (issuance)"
   ],
   "adversary": [
     {
-      "claim": "the community learns which of its eligible vetters attested no better than chance over the vetter set, less whatever the disclosed per-statement facts narrow that set",
+      "claim": "the community learns which of its eligible vetters attested no better than chance over the vetters that do not collude with it, less whatever the disclosed per-statement facts narrow that set. A vetter colluding with the community recomputes its own tag for this applicant from its secret and is confirmed or excluded, so the anonymity set is the non-colluding eligible vetters — and it is empty where all but the k attesters collude",
       "against": [
         "verifier",
         "issuer-verifier-colluding"
@@ -148,12 +150,13 @@
       "challenge-replayed (verify)",
       "challenge-not-minted (verify)",
       "attestation-count-below-k",
-      "unsupported-extension (the criterion's `extCritical` names a namespace the client does not implement: it stops before gathering named statements)"
+      "unsupported-extension (the criterion's `extCritical` names a namespace the client does not implement: it stops before gathering named statements)",
+      "attester-is-applicant (clause 7 — not built in the Groth16 route and no fixture there; the stated policy stands in for it)"
     ]
   },
   "options": [
     {
-      "construction": "the construction the chair named on PR #11 for the Linux Plumbers integration (Berkeley, with Glenn Gore integrating) — the Predicate Credential System (PCS): Σ-PS (Pointcheval–Sanders) credential base with the key-injective PRF Tag_DDH over BLS12-381, generalized Schnorr proofs under strong Fiat–Shamir; the applicant proves it holds attestations from k pairwise-distinct credentialed vetters, none of them itself, and receives a credential. SOURCE PUBLIC since 2026-09-28: OpenVTC/predicate-credential-system (MIT, arkworks 0.6, research artifact, not audited) at main 4f4edf5 — crate plus the demo pcs-vetting-prototype (Σ-PS + Tag_DDH; end-to-end tests: admission from two hidden vetters with no member id or vetter id in the facts; requestMore then resubmission counts once; one vetter counts once across submissions; a double-spent token does not count and the VTC cannot name anyone). Its five Trust Tasks are public (issuance lines; trust-tasks-tf PR #618/#620, 2026-09-23). Under this route the attestation linkage is bound to the vetter secret usk inside the credential system, not to a DID verification-method commitment (component 007 bypassed — see does-not-establish)",
+      "construction": "the construction the chair named on PR #11 for the Linux Plumbers integration (Berkeley, with Glenn Gore integrating) — the Predicate Credential System (PCS): Σ-PS (Pointcheval–Sanders) credential base with the key-injective PRF Tag_DDH over BLS12-381, generalized Schnorr proofs under strong Fiat–Shamir; the applicant proves it holds attestations from k pairwise-distinct credentialed vetters, none of them itself, and receives a credential. SOURCE PUBLIC since 2026-09-28: OpenVTC/predicate-credential-system (MIT, arkworks 0.6, research artifact, not audited) at main 4f4edf5 — crate plus the demo pcs-vetting-prototype (Σ-PS + Tag_DDH; end-to-end tests: admission from two hidden vetters with no member id or vetter id in the facts; requestMore then resubmission counts once; one vetter counts once across submissions; a double-spent token does not count and the VTC cannot name anyone). Its five Trust Tasks are public (issuance lines; trust-tasks-tf PR #618/#620, 2026-09-23). Under this route the attestation linkage is bound to the vetter secret usk inside the credential system, not to a DID verification-method commitment (component 007 bypassed — see does-not-establish). Assumptions as the review of 2026-11-18 read them: unforgeability rests on the Pointcheval–Sanders assumption, an interactive assumption justified in the generic group model, and tag unlinkability on DDH; the strong Fiat–Shamir transform, with the statement hashed alongside the commitments, is the sound variant; the implementation is unaudited, as its repository states",
       "cost": "constructor-reported, from the repository README and asserted by its tests (fixed-format encoding over BLS12-381, not measured here): Σ-PS attestation 240 B, proof 1,392 B at k = 5, credential 96 B; Σ-BBS 416 / 2,272 / 112 B; Σ-EQ 480 / 2,512 / 192 B. Running times: criterion benches exist (benches/pcs.rs at k = 5) but no figures are published in the repository; the ~12 ms prove-and-verify quoted in review is unsourced here and is not recorded",
       "measured": false,
       "source": "OpenVTC/predicate-credential-system main 4f4edf5 (2026-09-28: import, demo, CI) — README §Instantiations, docs/testing-and-benchmarks.md, demo/README.md · zkp-spec PR #11 (ScottJeezey 2026-09-21) · trust-tasks-tf PR #618 and PR #620 (stormer78 2026-09-23) · OpenVTC/governance PR #25 (2026-09-24) · zkp-spec PR #11 inline review (DenisPopov15 2026-09-28/29: options 0 and 3 of record 023 are this construction; a local run of a reference flow confirmed, on a commit not on any public branch, so the record pins the public main)"
@@ -179,7 +182,9 @@
     "the requirements digest binds the cap profile, community, accounting interval and policy parameters. Define the serial namespace and identity of an identical spend; ledger updates and counting must be atomic and durable. An acknowledged retry adds neither a spend nor an attestation, and does not reuse a consumed challenge",
     "name the admission policy evaluator and version: it applies per-method floors, independence caps, validity and eligibility rules to verified facts before a separate issuance decision. Assign these checks explicitly when the proof harness does not implement them",
     "the vetter side of option 1 has a public wire (trust-tasks-tf PR #618 and PR #620, merged 2026-09-23): `vtc/vetting/vetters/pcs-root/0.1` — enrolment for a class label; the community checks a live vetter grant, no credential under this label yet and the identifier this member was bound to, then signs a commitment it cannot open · `vtc/vetting/vetters/pcs-tokens/0.1` — one tick of an unconditional token drip at the community's published rate (a fetch that happened only when someone was busy would announce that they were busy; the quota is the community's to refuse) · `vetting/attestation/0.1` — vetter to applicant, the facts of the session with no issuer; `identifierScope: any`; the applicant MUST NOT record the delivering `issuer` beside it; dates, not timestamps, on the validity window · `vtc/vetting/vetters/event-mode/0.1` — a separate token label for a named event with its own rate, expiry and a group floor, requested by the vetter and approved by someone else (no Trust Task for the approval, by design). These are the framework's obligations behind clauses 2–5 and the challenge; the proof reads their outputs as witness and adds nothing to their semantics",
-    "DID-rooted enrolment (WG-17): where a vetter's or an applicant's enrolment secret is to be bound to a DID, the binding is made once, at enrolment — the enrolling party proves the secret is the one behind the commitment verification method of its DID document (record 007's relation, run against that document version). Signing-key rotations then leave the vetter-set commitment untouched; a vetter's secret rotation takes effect at the next vetter-set period, which this record's horizon already bounds; a hidden enrolment that must survive a secret rotation inside a period is record 025's"
+    "DID-rooted enrolment (WG-17): where a vetter's or an applicant's enrolment secret is to be bound to a DID, the binding is made once, at enrolment — the enrolling party proves the secret is the one behind the commitment verification method of its DID document (record 007's relation, run against that document version). Signing-key rotations then leave the vetter-set commitment untouched; a vetter's secret rotation takes effect at the next vetter-set period, which this record's horizon already bounds; a hidden enrolment that must survive a secret rotation inside a period is record 025's",
+    "self-attestation, Groth16 route: until clause 7 is built the community's criterion states that applicants are outside the eligible-vetter set — true of a first admission, where vetters are members and the applicant is not — or sets k one above the number of independent attestations it requires",
+    "setup: a profile on a pairing-based proving system with a circuit-specific setup (Groth16) names a multi-party setup ceremony with a published transcript, or a transparent proving system; a single-contributor or fixed-entropy setup is a lab artefact and conveys soundness to no one else (Security Considerations, trusted setup)"
   ],
   "provenance": {
     "spec": [
@@ -257,6 +262,16 @@
       "date": "2026-10-27",
       "by": "mitchuski",
       "note": "formal review run 2: clause 8 added from record 025's issuance — the rotation-tag check under a rotation-capable profile (F8); no state change"
+    },
+    {
+      "date": "2026-11-19",
+      "by": "mitchuski",
+      "note": "cryptographic review (zkp-spec #25 (DenisPopov15, 2026-11-18)): the anonymity claim reworded — the set is the non-colluding eligible vetters; the self-attestation gap of the Groth16 route given a stated policy, a k − 1 reading and a rejection code marked unbuilt; option 1's assumptions recorded; a profile's setup requirement stated and the lab setup's soundness limit named. No clause, measurement or state change."
+    },
+    {
+      "date": "2026-11-19",
+      "by": "mitchuski",
+      "note": "record 025's issuance read across (cryptographic review of 2026-11-18, zkp-spec #25): the rotation-tag clause names spent_root, the sorted spent-tag root, as a public input under a rotation-capable profile. The clause is specified and not built. State unchanged."
     }
   ],
   "formal": {
@@ -313,5 +328,14 @@
       }
     ],
     "scope": "the counting rule and the single-use rules over abstract primitives; not the construction's cryptography, unlinkability or the adversary claims; per-vetter cap attribution (DG-024-4) is not modelled; clause 8 is covered generically by record 025's model, not by this one"
-  }
+  },
+  "reviews": [
+    {
+      "by": "Denys Popov (DenisPopov15)",
+      "date": "2026-11-18",
+      "scope": "cryptographic reading of the construction and of the lab circuit's logic: the colluding-vetter anonymity claim, clause 7 in the Groth16 route, option 1's assumptions, the lab setup",
+      "verdict": "refined",
+      "evidence": "zkp-spec #25, record 024 points 1–4: the lab logic (tag per vetter per applicant, serial quota, applicant binding) read as correct; all four points taken as wording, policy and issuance lines"
+    }
+  ]
 }

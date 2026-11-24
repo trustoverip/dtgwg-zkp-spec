@@ -1,4 +1,4 @@
-<!-- generated-from: records-sha256=9a7cc10d973d96608428f493fbe095257d976f53a6c5c3f7e865babb9782dffd — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
+<!-- generated-from: records-sha256=801bf606c696241f24ae1ad09d7a685853a4e6031aa49432d03432771688d54b — the Requests Answered, Construction Records, Proving Systems and derived Privacy Considerations sections are generated from conformance/{records,requests,stacks}; conformance/test.mjs compares this stamp, the marked generated sections and generated terms with fresh generation from these files. Edit the records, not the generated text. -->
 
 <!-- generated-section:requests:start -->
 ## Requests Answered
@@ -143,6 +143,8 @@ Three clocks, never collapsed: the proof artefact's freshness (the transcript's 
 
 A presentation binds a transcript containing the authenticated request context and declared disclosures. Its exact serialization, hash framing and scalar conversion belong to the selected profile. The current lab encoding and a credential-layer digestMultibase representation are different interfaces; they are not interchangeable merely because both use SHA-256.
 
+A transcriptDigest that a circuit merely declares is not bound. In Groth16 a public input that appears in no constraint can be replaced after proving, and the proof still verifies. Record 003's clause is that the circuit constrains the scalar. A primitive record that lists transcriptDigest among its public inputs — records 004, 007, 008, 009 and 022 — relies on that clause: the enclosing composed record carries it, or the primitive is composed with record 003 where it is proven on its own. A circuit that leaves the input unconstrained does not conform to either record.
+
 #### Observed lab transcript encoding
 
 The inspected reference implementation computes the following procedure. This documents the lab baseline, not an adopted cross-implementation profile:
@@ -226,7 +228,7 @@ Identifiers are stable handles, not a type taxonomy or contiguous sequence. The 
 | [021](#construction-021-%C2%B7-authority-chain-(vac)-%E2%80%94-an-agent-or-device-acts-as-itself-under-attenuated-authority) | Authority chain (VAC) — an agent or device acts as itself under attenuated authority | `specified` | P2 | 001 ∧ 003 ∧ 004 ∧ 006 ∧ 009 |
 | [023](#construction-023-%C2%B7-two-vouch-admission-proof-%E2%80%94-an-applicant-proves-k-%E2%89%A5-2-vouches-from-distinct-current-members-to-the-issuing-community%2C-without-disclosing-which-members) | Two-vouch admission proof — an applicant proves k ≥ 2 vouches from distinct current members to the issuing community, without disclosing which members | `specified` | P1 | 001 ∧ 003 ∧ 004 ∧ 005 ∧ 006 ∧ 007 |
 | [024](#construction-024-%C2%B7-hidden-vetting-admission-%E2%80%94-an-applicant-proves-k-attestations-from-pairwise-distinct-eligible-vetters-of-the-issuing-community%2C-without-disclosing-which-vetters) | Hidden-vetting admission — an applicant proves k attestations from pairwise-distinct eligible vetters of the issuing community, without disclosing which vetters | `constructed` | P1 | 001 ∧ 002 ∧ 003 ∧ 004 ∧ 005 |
-| [025](#construction-025-%C2%B7-secret-rotation-with-enrolment-continuity-%E2%80%94-a-member-replaces-the-secret-behind-its-enrolment-with-the-one-it-pre-committed%2C-retiring-the-old-enrolment-without-disclosing-which-it-was) | Secret rotation with enrolment continuity — a member replaces the secret behind its enrolment with the one it pre-committed, retiring the old enrolment without disclosing which it was | `specified` | P2 | 001 ∧ 002 ∧ 003 ∧ 006 |
+| [025](#construction-025-%C2%B7-secret-rotation-with-enrolment-continuity-%E2%80%94-a-member-replaces-the-secret-behind-its-enrolment-with-the-one-it-pre-committed%2C-on-the-authority-of-that-next-secret%2C-retiring-the-old-enrolment-without-disclosing-which-it-was) | Secret rotation with enrolment continuity — a member replaces the secret behind its enrolment with the one it pre-committed, on the authority of that next secret, retiring the old enrolment without disclosing which it was | `constructed` | P2 | 001 ∧ 002 ∧ 003 ∧ 006 ∧ 009 |
 
 ### Construction 001 · Set membership over an accredited root
 
@@ -902,7 +904,7 @@ A verifier learns that the credential's nullifier is not in the revocation set a
 
 #### Relation
 
-1. non-membership of the handle in the set committed by rl_root (sorted-leaf neighbours or accumulator non-witness) — [[ref: non-revocation]]
+1. non-membership of the handle in the set committed by rl_root (sorted-leaf neighbours or accumulator non-witness) — [[ref: non-revocation]] · runtime `runtimes/circom-gadget/circuits/rotation.circom`
 
 #### Disclosure set
 
@@ -950,6 +952,7 @@ Rejection codes: `rl-root-stale`, `handle-revoked`
 
 - registry publishes rl_root per epoch, fetchable without identifying the fetcher (X4)
 - the registry commits rl_root over strictly sorted handles — adjacent neighbours prove a handle absent only over a sorted list; over an unsorted one they can bracket a handle that is present (the formal model's counter-deployment `unsorted_neighbours_unsound`)
+- the lab's form of the sorted commitment is a tree of range leaves — one leaf per adjacent pair (lo, hi) of the strictly sorted handle list, with sentinels at both ends: a handle strictly inside one range is absent, shown by one inclusion proof and two comparisons over range-checked values
 
 #### Provenance
 
@@ -972,6 +975,7 @@ Revisions within a state:
 |---|---|---|
 | 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
 | 2026-09-23 | mitchuski | issuance requirement added from the formal model: rl_root over strictly sorted handles; no state change |
+| 2026-11-19 | mitchuski | the sorted-neighbour clause built as a template (RangeNonMembership) inside record 025's circuit: range leaves, 128-bit handles; fixtures R5, R7 and R12 of test-rotation.mjs exercise it, R12 being the unsorted counter-deployment. Not measured on its own; state unchanged. |
 
 #### Formal verification
 
@@ -1027,7 +1031,7 @@ A verifier checks that two identifiers appearing in DTG credentials — as subje
 #### Public inputs
 
 - the two identifiers exactly as the credentials carry them — or their ZK-openable commitments, when the identifiers themselves are hidden by the enclosing record
-- transcriptDigest — the presentation transcript this proof is bound to
+- transcriptDigest — the presentation transcript this proof is bound to; the binding is record 003's clause, which the enclosing record carries (does-not-establish)
 
 #### Relation
 
@@ -1047,6 +1051,8 @@ A verifier checks that two identifiers appearing in DTG credentials — as subje
 - the counterparty's common control: a presenter can prove only what is derived from a secret in the presenter's hands; a counterparty's linkage needs the counterparty's witness or the counterparty's own attestation (see record 010)
 - that arbitrary independently generated or hardware-protected keys derive from a shared available scalar; derivation and custody are profile requirements
 - a chain predicate: that a child credential's `issuer` equals its parent's `credentialSubject.id` across credentials signed by different parties involves no holder secret and is hidden-value equality (record 009 inside records 020 and 021), not common control — the two must not be read as one primitive (cred-spec #9, geoffturk 2026-09-10)
+- that the proof is bound to its transcript by this clause alone: transcriptDigest is a public input the key-binding clause does not read, and in Groth16 a public input that appears in no constraint can be replaced after proving. The binding is record 003's clause — the circuit constrains the scalar — carried by the enclosing record, or composed with this one where it is proven on its own; a circuit for this record that leaves the input unconstrained does not conform
+- control of either DID: a commitment is public, and anyone can copy it into another DID document. The copier cannot open it, but the holder of s can then run this clause against a DID it does not control — the clause shows one secret behind two published commitments, and that each commitment belongs in the document it was read from is vouched for only by the DID method's document-update authority, a trust assumption of this record. Control of each identifier is key control (record 004, or a signature under the identifier's authentication key over the same transcript), which the enclosing record pairs with this one on each identifier it names
 
 #### Adversary, per claim
 
@@ -1061,13 +1067,13 @@ A verifier checks that two identifiers appearing in DTG credentials — as subje
 *Quantum horizon* — read against Security Considerations item 8:
 
 - forgery: none inside the relation: two hash openings sharing a secret hold; a Pedersen or KZG commitment in place of the hash opening falls (binding), as does a BabyJubJub or BLS12-381 SNARK-native key as the identifier's own key — the hash-commitment form of the identifier commitment profile is the post-quantum form
-- confidentiality: none — hiding is information-theoretic in every option
+- confidentiality: the hash-commitment form is computationally hiding, not information-theoretic: a Poseidon commitment to (s, salt) hides s under preimage resistance — of the order of 2^127 Grover iterations for a field-sized secret, no practical loss; a Pedersen commitment is the one form listed whose hiding is information-theoretic; a SNARK-native key as the identifier's own key (pk = s·G over BabyJubJub or BLS12-381) hides nothing from a quantum attacker: Shor's algorithm recovers s from the public key, and with s every identifier and nullifier derived from it — a harvest-now, link-later exposure of anything published today. The hash-commitment form does not carry it
 
 #### Conformance fixtures
 
 Families: `accepts` · `rejects-unsat` · `rejects-verify` · `unlinkable`
 
-Rejection codes: `co-control-unproven (unsat: distinct secrets)`, `identifier-not-zk-openable (verify-fail: identifier carries no openable commitment — an issuance failure, X3)`
+Rejection codes: `co-control-unproven (unsat: distinct secrets)`, `identifier-not-zk-openable (verify-fail: identifier carries no openable commitment — an issuance failure, X3)`, `commitments-equal (lint at issuance: two identifiers of one secret carry the same commitment — the salts were reused, and the identifiers are linked on their face)`
 
 #### Construction options
 
@@ -1088,6 +1094,8 @@ Rejection codes: `co-control-unproven (unsat: distinct secrets)`, `identifier-no
 - where the commitment lives — the task force's preference, stated for the credential specification to give it a home: as a verification method in the identifier's DID document (a `Multikey` entry carrying the commitment or the SNARK-native key), not as a member of any credential. The commitment is a property of the identifier — one per identifier, shared by every credential that names it, resolved the way a verifier already resolves the signing key — so it changes no credential schema and leaves the credential layer one requirement (which DID methods can carry it) instead of a member on every type. A credential member is the fallback only for a profile whose DID method cannot carry a second verification method
 - the WD02 example set read against this line (the credential maintainer's answer to question 2 of zkp-tf #23): `did:key` over Ed25519 carries exactly one key and cannot carry a second verification method, so an Ed25519 `did:key` identifier has no place for the commitment and cannot satisfy this record as it stands; `did:peer` (numalgo 2 and 4) and `did:webvh` can carry one. The first implementation should mint the narrow-scope identifiers that may be co-proven as `did:peer` with the commitment as a second verification method, or as `did:key` over a SNARK-native key type — and that is the first thing for it to find out (WG-14)
 - whether the requirement can be a MUST: yes, conditioned on the identifier's key profile rather than on a derivation the whole graph shares. The sentence should bind an identifier minted under a profile that declares co-control provable (a derivable key with a published commitment, or a SNARK-native key); a key held in a secure element with no available scalar is outside that profile, and co-control for it is established at issuance by the party who can prove it (the issuance-time attestation route of record 010) or not at all. WG-02's decision on derivation selects the first profile; it does not need to precede the sentence
+- the per-identifier salts of one secret MUST differ (salt_A ≠ salt_B): equal salts publish the same commitment in two DID documents and link the identifiers with no proof involved. Each salt is 32 bytes fresh from a CSPRNG — distinctness is what unlinkability needs while s is secret, and the entropy keeps the holder's other identifiers from being enumerated if s is later exposed
+- under a derived-key profile the derivation is hardened: each identifier's key is a one-way function of the secret and its path, with no public-derivation relation between parent and child. Under non-hardened (BIP32-style) derivation one child private key together with the parent public key yields the parent private key, so the exposure of one identifier's key would expose s and every identifier under it
 
 #### Provenance
 
@@ -1114,6 +1122,7 @@ Revisions within a state:
 | 2026-09-21 | mitchuski | Review of 2026-09-16 (credential maintainer): the commitment's home stated as a task-force preference (DID-document verification method; credential member only as fallback); the requirement sentence conditioned on a key profile rather than on universal derivation; the WD02 example set found unable to satisfy this record as it stands (Ed25519 `did:key` cannot carry the commitment) — WG-14. Citations by section title. State unchanged. |
 | 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
 | 2026-10-02 | mitchuski | horizon split by key profile in answer to the task-force discussion of 2 October (a DID as the starting point; rotation): signing-key rotation does not restart the clause where the commitment is its own verification method; a secret rotation does, and record 025 carries an enrolment across it. State unchanged. |
+| 2026-11-19 | mitchuski | cryptographic review (zkp-spec #25 (DenisPopov15, 2026-11-18)): the quantum-confidentiality line corrected — a hash commitment is computationally hiding, and a SNARK-native key gives up s to Shor; transcriptDigest stated as bound by record 003's clause, not by this one; issuance gains salt distinctness and hardened derivation; knowledge of the opening separated from control of the DID, with the document-update authority named as a trust assumption. The relation is unchanged. State unchanged. |
 
 #### Formal verification
 
@@ -1141,6 +1150,7 @@ Recorded reviewer sign-off on this record's clauses; a review is not a state adv
 | date | reviewer | scope | verdict | evidence |
 |---|---|---|---|---|
 | 2026-09-23 | Denys Popov (DenisPopov15) | clause 1's key-profile condition and the WG-14 finding | `refined` | PR #11 review on conformance/records/007.json: an Ed25519 did:key has no space for the commitment; did:peer (numalgo 2 and 4), did:web and did:webvh — and other methods with anchoring — can carry one |
+| 2026-11-18 | Denys Popov (DenisPopov15) | cryptographic reading of the construction: hiding under a quantum attacker, the transcript input, salts and derivation, opening versus control | `refined` | zkp-spec #25, record 007 points 1–4: all four taken — the confidentiality line was wrong as written; points 2–4 are stated as does-not-establish and issuance lines |
 
 
 ### Construction 008 · Blinded binder (taskContext hiding; presentation correlation unresolved)
@@ -1321,11 +1331,11 @@ A verifier learns that a hidden field of one authenticated credential equals a h
 #### Public inputs
 
 - whatever the enclosing record discloses of the two credentials — this record adds no public input of its own
-- transcriptDigest — the presentation transcript this proof is bound to
+- transcriptDigest — the presentation transcript this proof is bound to; the binding is record 003's clause, which the enclosing record carries (does-not-establish)
 
 #### Relation
 
-1. field_a (opened from credential A's authenticated content) equals field_b (opened from credential B's authenticated content): field_a − field_b = 0 — a differing pair is unsatisfiable, and neither value is a public signal — [[ref: hidden-equality]]
+1. field_a (opened from credential A's authenticated content) equals field_b (opened from credential B's authenticated content), each taken whole in the profile's canonical form and injective encoding (issuance): field_a − field_b = 0 on every element of the encoding — a differing pair is unsatisfiable, and neither value is a public signal — [[ref: hidden-equality]]
 
 #### Disclosure set
 
@@ -1339,11 +1349,13 @@ A verifier learns that a hidden field of one authenticated credential equals a h
 - that either credential is authentic, valid or unrevoked on its own — the enclosing record's signature-verify (or set-membership) and non-revocation clauses establish that; this clause compares two witnesses those clauses have already bound
 - that the two credentials were meant to be presented together — intentional correlation is the holder's declaration (record 012), and a shared subject widens no identifier's declared scope
 - anything about the value's meaning: an equal `issuer` and `credentialSubject.id` across two hops establishes the link the chain rule requires (cred-spec §Delegation Edges, §Attenuation) and nothing about who that party is
+- that the proof is bound to its transcript by this clause alone: transcriptDigest is a public input the hidden-equality clause does not read, and in Groth16 a public input that appears in no constraint can be replaced after proving. The binding is record 003's clause — the circuit constrains the scalar — carried by the enclosing record, or composed with this one where it is proven on its own; a circuit for this record that leaves the input unconstrained does not conform
+- authenticity of a credential whose `issuer` is hidden, under the as-signed option: hiding the issuer hides the key its signature verifies under, so the enclosing record must verify the signature under a hidden key and show that the key is that identifier's — and no DID is resolved inside a circuit (Integration). Three shapes meet this: a self-certifying identifier (`did:key`, `did:peer` numalgo 0) whose key is decoded from the hidden identifier inside the proof; a committed identifier-to-key binding the proof opens (a registry leaf under a public root, or a key commitment the parent credential carries for its subject); or an issuer-hiding signature scheme. None is selected: it is an open requirement of records 020 and 021
 
 #### Adversary, per claim
 
 - **verifier · verifiers-colluding** — the compared value is not disclosed and no value derived from it is emitted; two verifiers comparing proofs learn only what the enclosing records disclosed to each
-- **issuer-verifier-colluding** — the issuer of either credential learns nothing about the other credential from the proof — the equality is proven over openings the holder supplies, never over a value the issuer can recognise in a public signal
+- **issuer-verifier-colluding** — the proof emits no value by which the issuer of either credential can recognise it: the equality is proven over openings the holder supplies, never over a public signal. What an issuer already holds is outside the claim — the parent's issuer wrote the parent's `credentialSubject.id`, which is the compared value, so where the enclosing record's disclosures let that issuer recognise its credential it learns that the other credential names the same identifier
 
 #### Horizon
 
@@ -1359,7 +1371,7 @@ A verifier learns that a hidden field of one authenticated credential equals a h
 
 Families: `accepts` · `rejects-unsat` · `rejects-verify` · `unlinkable`
 
-Rejection codes: `hidden-values-differ (unsat: the two openings are not equal)`, `field-not-openable (verify-fail: a compared field carries no commitment the proof can open — an issuance failure, X3 applied to the compared fields)`
+Rejection codes: `hidden-values-differ (unsat: the two openings are not equal)`, `field-not-openable (verify-fail: a compared field carries no commitment the proof can open — an issuance failure, X3 applied to the compared fields)`, `encoding-not-injective (lint: the profile compares a truncated or length-free packing of the identifier)`
 
 #### Construction options
 
@@ -1368,13 +1380,15 @@ Rejection codes: `hidden-values-differ (unsat: the two openings are not equal)`,
 | construction | cost | status | source |
 |---|---|---|---|
 | Groth16/Poseidon: two Poseidon openings of the compared fields (the circom-gadget leaf commitment, twice) plus one equality constraint — conjecture: the openings are the whole cost, the equality is one constraint | unmeasured (conjecture ≈ 2 × the lab's Poseidon leaf commitment + 1; one compile settles it) | unmeasured | runtimes/circom-gadget (Poseidon commitment already binds a leaf to hidden content) |
-| as-signed credentials (ECDSA/Ed25519 rails): equality of two signed fields inside a Longfellow-class or ProveKit circuit — the signature checks are the cost, the equality is free | unmeasured; dominated by two signature verifications | unmeasured | board/stacks/siros-longfellow.json · board/stacks/provekit.json |
+| as-signed credentials (ECDSA/Ed25519 rails): equality of two signed fields inside a Longfellow-class or ProveKit circuit — the signature checks are the cost, the equality is free | unmeasured; two in-circuit signature verifications at the least. Where either `issuer` is hidden the verification is under a hidden key, with a proof that the key is the hidden identifier's — the larger cost, and not specified (does-not-establish) | unmeasured | board/stacks/siros-longfellow.json · board/stacks/provekit.json |
 | no proof — the shared value is disclosed and compared in the clear (the credential specification's stated fallback: 'every requirement here can be checked by presenting the credentials themselves … the cost is privacy rather than correctness') | zero constraints; the cost is the disclosure of the whole chain or both subjects | unmeasured | cred-spec §Zero-Knowledge and Selective Disclosure editor's note, 'What holds until this work lands' |
 
 #### Issuance requirements
 
 - each field that may be compared must be, or carry, a ZK-openable commitment inside the authenticated credential content: for the chain predicates that is `issuer` and `credentialSubject.id` on every hop; for the shared-subject rule it is `credentialSubject.id` on the VMC and the VAC — the X3 requirement applied to the compared fields rather than to signatures (cred-spec #17)
 - a credential whose compared field is a `pairwise` identifier that differs from the identifier in the other credential cannot satisfy this record by construction; the holder either declared one `directed` identifier for both, or the enclosing record composes record 007 for that pair instead
+- encoding: a DID is longer than one field element (about 31 bytes on BN254 or BLS12-381), so the compared value is never a truncation. The profile fixes one of two encodings — an injective packing (the UTF-8 bytes in 31-byte limbs with the byte length as a further element, compared element by element), or a domain-separated collision-resistant hash of the whole string to one field element, where equality then rests on that hash. A truncated or length-free packing accepts unequal identifiers, which is a soundness failure
+- normalisation: both fields are reduced to one canonical form before encoding — an `issuer` given as an object is read as its `id`; a DID is compared without fragment, query or path; no case folding beyond what the DID method defines — or one identifier written two ways fails to match. The canonical form is the credential specification's to state, as the comparison it already makes in the clear; the proof needs it to be one function of the credential bytes, the same in both credentials
 
 #### Provenance
 
@@ -1397,6 +1411,7 @@ Revisions within a state:
 | date | by | note |
 |---|---|---|
 | 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
+| 2026-11-19 | mitchuski | cryptographic review (zkp-spec #25 (DenisPopov15, 2026-11-18)): the clause names the canonical form and injective encoding it compares over, with issuance lines for both; verification of a credential whose issuer is hidden recorded as an open requirement of records 020 and 021, and the as-signed option's cost line corrected; the claim against a colluding issuer narrowed to what the proof emits; transcriptDigest stated as bound by record 003's clause. State unchanged. |
 
 #### Formal verification
 
@@ -1415,6 +1430,14 @@ Revisions within a state:
 | hypothesis | carries |
 |---|---|
 | authenticated openings | the compared fields are the openings the enclosing record's signature-verify or membership clauses bind — carried by the enclosing record |
+
+#### Reviews
+
+Recorded reviewer sign-off on this record's clauses; a review is not a state advance and confers no evidence state.
+
+| date | reviewer | scope | verdict | evidence |
+|---|---|---|---|---|
+| 2026-11-18 | Denys Popov (DenisPopov15) | cryptographic reading of the construction: encoding and normalisation of the compared value, signature verification under a hidden issuer, the colluding-issuer claim | `refined` | zkp-spec #25, record 009 points 1–3 and record 007 point 2 as it applies here: all taken |
 
 
 ### Construction 010 · Community-Anchored Proof (ADR-001)
@@ -1456,6 +1479,7 @@ A maintainer checks authenticated evidence of a relationship between two distinc
 - rl_root and epoch — revocation state
 - nullifier (only if this context declares reuse detection; otherwise absent)
 - transcriptDigest — one transcript for the whole show, including the maintainer's challenge
+- under a rotation-capable profile: spent_root — the community's root over its strictly sorted spent rotation tags at the epoch (record 025, issuance)
 
 #### Relation
 
@@ -1468,7 +1492,7 @@ A maintainer checks authenticated evidence of a relationship between two distinc
 7. C1–C3 — neither VMC handle nor the VRC handle is in the set under rl_root at epoch — [[ref: non-revocation]] ([[ref: construction record]] 006, [Non-revocation against a status root](#construction-006-%C2%B7-non-revocation-against-a-status-root))
 8. P4 (parameterised) — if the context declares reuse detection, emit the scoped nullifier; else emit none — [[ref: nullifier]] ([[ref: construction record]] 002, [Scoped nullifier (reuse detection)](#construction-002-%C2%B7-scoped-nullifier-(reuse-detection)))
 9. S5 — the whole show is bound to transcriptDigest — [[ref: transcript-bind]] ([[ref: construction record]] 003, [Transcript binding](#construction-003-%C2%B7-transcript-binding))
-10. under a rotation-capable profile (record 025), neither member leaf's rotation tag is in the community's spent-tag set at the epoch — a secret rotated away no longer presents — [[ref: non-revocation]] ([[ref: construction record]] 025, [Secret rotation with enrolment continuity — a member replaces the secret behind its enrolment with the one it pre-committed, retiring the old enrolment without disclosing which it was](#construction-025-%C2%B7-secret-rotation-with-enrolment-continuity-%E2%80%94-a-member-replaces-the-secret-behind-its-enrolment-with-the-one-it-pre-committed%2C-retiring-the-old-enrolment-without-disclosing-which-it-was))
+10. under a rotation-capable profile (record 025), neither member leaf's rotation tag is in the community's spent-tag set at the epoch — a secret rotated away no longer presents. Absence is proven against spent_root, the root over the strictly sorted spent tags; over an unsorted set a neighbour proof can pass for a tag that is present — [[ref: non-revocation]] ([[ref: construction record]] 025, [Secret rotation with enrolment continuity — a member replaces the secret behind its enrolment with the one it pre-committed, on the authority of that next secret, retiring the old enrolment without disclosing which it was](#construction-025-%C2%B7-secret-rotation-with-enrolment-continuity-%E2%80%94-a-member-replaces-the-secret-behind-its-enrolment-with-the-one-it-pre-committed%2C-on-the-authority-of-that-next-secret%2C-retiring-the-old-enrolment-without-disclosing-which-it-was))
 
 #### Disclosure set
 
@@ -1566,6 +1590,7 @@ Revisions within a state:
 | 2026-09-21 | mitchuski | Review of 2026-09-16: the credential maintainer's answer to question 2 of #23 recorded; the example set's Ed25519 `did:key` identifiers found unable to carry the commitment record 007 requires (WG-14). Citations by section title. State unchanged. |
 | 2026-09-23 | mitchuski | formal model built (Lean, composed from the gadget library); no state change |
 | 2026-10-27 | mitchuski | formal review run 2: scope narrowed to the encoded relation (F3); clause 10 added from record 025's issuance — the rotation-tag check under a rotation-capable profile (F8); no state change |
+| 2026-11-19 | mitchuski | record 025's issuance read across (cryptographic review of 2026-11-18, zkp-spec #25): the rotation-tag clause names spent_root, the sorted spent-tag root, as a public input under a rotation-capable profile. The clause is specified and not built. State unchanged. |
 
 #### Formal verification
 
@@ -2052,6 +2077,7 @@ A verifier learns that the presenting agent holds a delegation chain rooted at a
 - that the principal is the party the verifier intends to deal with — §Delegation Chains check 5 is the verifier's own check, outside the proof; the proof shows the root's issuer is a leaf of root_C, not that it is the intended party
 - the delegate's demonstration of key control at the moment of the request (§Invocation Binding) beyond what clause 4 binds into this transcript — how the demonstration is requested and carried is the trust task's
 - chain length: without a validated fixed-shape or padded profile the number of hops is disclosed by the proof's shape (cred-spec Privacy Considerations item 13)
+- how a hop's signature is verified while its `issuer` stays hidden: the signature-verify clause needs the hidden issuer's key and a proof that the key is that identifier's, with no DID resolved inside the circuit — a self-certifying identifier decoded in the proof, a committed identifier-to-key binding the proof opens, or an issuer-hiding signature scheme. None is selected; this is an open requirement of this record (record 009, does-not-establish)
 
 #### Adversary, per claim
 
@@ -2113,6 +2139,7 @@ Revisions within a state:
 |---|---|---|
 | 2026-09-11 | mitchuski | Door D17 — re-read against the merged VDC text (cred-spec main, 2026-09-06/10): depth restated as the per-ancestor bound; the issuer-equals-parent-subject clause added and bound to record 009 (hidden-value equality); `credentialStatus` corrected — conditional on every VDC, not only chained ones; issuance and provenance now cite the merged sections; three negative-space lines added (intended-party check, invocation demonstration, chain length). State unchanged. |
 | 2026-09-23 | mitchuski | formal model built (Lean, composed from the gadget library); no state change |
+| 2026-11-19 | mitchuski | cryptographic review of record 009 (zkp-spec #25 (DenisPopov15, 2026-11-18)) read across: verifying a hop's signature under a hidden issuer named as an open requirement. No clause changes. State unchanged. |
 
 #### Formal verification
 
@@ -2206,6 +2233,7 @@ A verifier learns that the presenting party holds authority to perform action X 
 - that the action was performed, or performed within scope — the invocation and its receipt are trust-task artifacts (the artifact gap)
 - unconditional hiding from the governing party: where the root carries `credentialStatus`, the status fetch tells the root's status host that some verifier checked the chain, and when (cred-spec Privacy Considerations item 14) — a profile that fetches rl_root without a per-chain query is the mitigation, not this proof
 - distinct controllers along the chain: a party attenuating to itself under a second identifier satisfies every clause
+- how a hop's signature is verified while its `issuer` stays hidden: the signature-verify clause needs the hidden issuer's key and a proof that the key is that identifier's, with no DID resolved inside the circuit — a self-certifying identifier decoded in the proof, a committed identifier-to-key binding the proof opens, or an issuer-hiding signature scheme. None is selected; this is an open requirement of this record (record 009, does-not-establish)
 
 #### Adversary, per claim
 
@@ -2269,6 +2297,7 @@ Revisions within a state:
 |---|---|---|
 | 2026-09-23 | mitchuski | formal model built (Lean, composed from the gadget library); no state change |
 | 2026-10-27 | mitchuski | formal review run 2: scope narrowed — the parent digest and the common-control route of clause 7 are not in the model (F5); no state change |
+| 2026-11-19 | mitchuski | cryptographic review of record 009 (zkp-spec #25 (DenisPopov15, 2026-11-18)) read across: verifying a hop's signature under a hidden issuer named as an open requirement. No clause changes. State unchanged. |
 
 #### Formal verification
 
@@ -2321,18 +2350,18 @@ A verifier learns that a digest-valued reference carried by a presented credenti
 *Never leaves the holder.*
 
 - the referenced credential's canonical bytes — its JSON representation without the top-level `proof`, canonicalized per JCS (RFC 8785), as §Digest Encoding prescribes — or, where the enclosing record needs only the digest, the digest itself
-- the blinding value u under which the digest was taken (a 32-byte random salt), held by whoever holds the referenced credential
+- the blinding value u — under the adopted placement, the referenced credential's own top-level `salt` member (32 random bytes, inside the canonical bytes above); under option 2, a 32-byte salt held beside the reference by its two parties
 - the referencing credential that carries the reference (its bytes stay with the holder; only what the enclosing record discloses is shown)
 
 #### Public inputs
 
 - the reference value as the referencing credential carries it (route 1: a salted digest, visible; route 2: nothing — the reference is opened inside the proof and the enclosing record's public inputs stand in for it)
-- transcriptDigest — the presentation transcript this proof is bound to
+- transcriptDigest — the presentation transcript this proof is bound to; the binding is record 003's clause, which the enclosing record carries (does-not-establish)
 - the hash algorithm the reference declares in its Multihash header (`sha2-256` unless a governing VTC or VTN permits another), so verifier and circuit agree on the function being opened
 
 #### Relation
 
-1. the reference opens to (canonical bytes of the referenced credential, u) under the declared digest function: reference = Multibase(Multihash(H(bytes ∥ u))) — a different credential or a different salt is unsatisfiable; and when the enclosing record reads the referenced credential (the grant's fields in record 010, the parent's fields in records 020 and 021, the object in a VSC-based record) the bytes opened here are the bytes those clauses read — one credential, not one for the digest and another for the predicate — [[ref: commitment-open]]
+1. the reference opens to the referenced credential's canonical bytes under the declared digest function, in the one placement the profile names. Adopted placement (option 1, cred-spec #38): reference = Multibase(Multihash(H(JCS(credential without `proof`)))), where the credential carries the top-level `salt` member u — the salt is inside the hashed bytes, where JCS orders it, and nothing is appended. Option 2 is a different function, H(bytes ∥ u) over a credential that carries no salt; vectors and circuits are built for exactly one of the two. A different credential or a different salt is unsatisfiable; and when the enclosing record reads the referenced credential (the grant's fields in record 010, the parent's fields in records 020 and 021, the object in a VSC-based record) the bytes opened here are the bytes those clauses read — one credential, not one for the digest and another for the predicate — [[ref: commitment-open]]
 
 #### Disclosure set
 
@@ -2347,10 +2376,13 @@ A verifier learns that a digest-valued reference carried by a presented credenti
 - unlinkability of presentations that show the same salted digest (route 1): hiding the plaintext behind a salt stops enumeration and nothing else; a stable visible reference still links every presentation of the referencing credential, exactly as record 008 says of a visible commitment C
 - which digest-valued members carry a salt and where the salt lives — that disposition is the credential specification's (cred-spec #38); this record states what the proof needs of whichever placement is chosen
 - that a chain reference (a VDC's or VAC's `parent`) needs blinding for safety: the credential specification re-checks every link against the parent actually presented, so a chain reference is unforgeable within a presented chain without a salt; blinding it serves uniformity and enumeration resistance, not chain soundness
+- that the proof is bound to its transcript by this clause alone: transcriptDigest is a public input the commitment-open clause does not read, and in Groth16 a public input that appears in no constraint can be replaced after proving. The binding is record 003's clause — the circuit constrains the scalar — carried by the enclosing record, or composed with this one where it is proven on its own; a circuit for this record that leaves the input unconstrained does not conform
+- enumeration resistance against a party shown the salt: the salt protects only while it is withheld. A verifier shown part of the referenced credential under a selective-disclosure suite, together with its salt, and holding a digest reference to that credential, can try the undisclosed low-entropy members against the digest — the enumeration this record exists to stop (issuance)
+- that the members the enclosing clauses read are the members the digest covers, without a structural reading of the bytes: the one-credential rule requires locating members inside the JCS bytes in the circuit, and JSON parsing in a circuit is a known source of field-confusion faults — a key matched inside a string value, an escape sequence, a duplicate member, a member at another depth. A circuit establishes each member's position structurally (a top-level key, outside any string, occurring once), never by substring match. A profile may instead read fields from a SNARK-native commitment the issuer places in the credential, which makes the correspondence of bytes to fields the issuer's assertion and a trust assumption. Neither is built or measured
 
 #### Adversary, per claim
 
-- **verifier** — a verifier shown the reference but not the referenced credential learns nothing about that credential's content that it could not have guessed without the reference — the salt removes the enumeration oracle
+- **verifier** — a verifier shown the reference but neither the referenced credential nor its salt learns nothing about that credential's content that it could not have guessed without the reference — the salt removes the enumeration oracle for as long as the verifier does not hold it
 - **verifiers-colluding** — route 2 only: two verifiers comparing what they were shown cannot link two presentations of the referencing credential through the reference, because neither saw a reference value
 
 #### Horizon
@@ -2376,7 +2408,7 @@ Rejection codes: `reference-mismatch (unsat: no (bytes, u) opens the presented r
 
 | construction | cost | status | source |
 |---|---|---|---|
-| salt in the referenced credential's hashed block (an ACDC-style `u` member: 32 random bytes the issuer places in the credential, so every digest of that credential is unpredictable without the credential itself). Route 1: no change to the digest computation of §Digest Encoding beyond the bytes it hashes; a verifier shown the referenced credential recomputes as today; enumeration is defeated for every reference to that credential at once, and the salt travels with the credential that owns it | zero outside a proof; inside a proof, a SHA-256 preimage over the canonical bytes — on the order of 25–30k R1CS constraints per 64-byte block in circom's sha256 (conjecture for this record, not measured); a 1.5 KB credential is roughly 24 blocks | unmeasured | cred-spec #38 (the ACDC `u` salty-nonce placement named in the issue); KERI/ACDC specification, blinding of SAIDs by a `u` field; circomlib sha256 constraint counts as commonly reported |
+| salt in the referenced credential's hashed block (an ACDC-style `u` member: 32 random bytes the issuer places in the credential, so every digest of that credential is unpredictable without the credential itself). Route 1: no change to the digest computation of §Digest Encoding beyond the bytes it hashes; a verifier shown the referenced credential recomputes as today; enumeration is defeated for every reference to that credential at once, and the salt travels with the credential that owns it | zero outside a proof; inside a proof, a SHA-256 preimage over the canonical bytes — on the order of 25–30k R1CS constraints per 64-byte block in circom's sha256, so roughly 700k for a 1.5 KB credential of about 24 blocks (conjecture for this record, not measured) — before any member is located in those bytes, which is the larger risk (does-not-establish) | unmeasured | cred-spec #38 (the ACDC `u` salty-nonce placement named in the issue); KERI/ACDC specification, blinding of SAIDs by a `u` field; circomlib sha256 constraint counts as commonly reported |
 | salt held beside the reference, outside the credential at rest (record 008's route 1 shape): the referencing credential carries H(bytes ∥ u) and the two parties to the reference hold u; the referenced credential is unchanged. Blinds one reference rather than every reference to a credential, and requires a distribution and retention rule for u | as above in-circuit; a retention rule outside it | unmeasured | cred-tf #39 (salted commitments available now); record 008 route 1 and its retention caveat |
 | a SNARK-native commitment (Poseidon or Pedersen over a field encoding of the digest) as the reference — cheap to open in-circuit, but a second hashed representation beside §Digest Encoding's, which is the encoding migration #38 was scoped to avoid; recorded as the not-preferred option | a few hundred constraints to open; a second encoding for every consumer | unmeasured | cred-spec #38 ('so a blinding scheme can later change what is hashed without a second encoding migration') |
 
@@ -2387,6 +2419,7 @@ Rejection codes: `reference-mismatch (unsat: no (bytes, u) opens the presented r
 - content-binding references (acknowledgement, acceptance, statement object) must stay bound to the exact content they name: a salted digest preserves that binding, a re-randomizable commitment would not without a further opening
 - chain references (a VDC's and a VAC's `parent`) are re-checked by the verifier against the parent presented, so a profile may leave them unsalted where the whole chain is disclosed, and must salt them where a chain is proven without disclosure (records 020 and 021)
 - the encoding of the reference is unchanged: Multibase base-58-btc over a Multihash of the salted digest, compared as decoded bytes, as §Digest Encoding requires
+- the `salt` should not be a mandatory-disclosure member under a selective-disclosure suite — a finding of the review of 2026-11-18 against the placement as adopted, for the credential specification to weigh before the context that defines `salt` is published (cred-spec PR #87): (a) a verifier shown part of the referenced credential and its salt, and holding a digest reference to it, can enumerate the undisclosed members against the digest; (b) a unique 32-byte salt shown in every derived presentation is a perfect correlator, and removes the unlinkability a BBS derivation otherwise has; (c) a verifier of a partial disclosure cannot recompute the digest in any case, so a disclosed salt serves no check there. What the proof side needs: the salt is disclosed only where the whole credential is disclosed, and the verifier then recomputes the reference as §Digest Encoding prescribes; under partial disclosure the salt stays with the holder and a reference to the credential is opened inside the proof (route 2). This withdraws the reading given on #38 on 2026-09-30, that mandatory disclosure is the witness-side requirement: the holder needs the salt as a witness, and the verifier does not need to see it
 
 #### Provenance
 
@@ -2417,6 +2450,7 @@ Revisions within a state:
 | 2026-09-23 | mitchuski | formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change |
 | 2026-09-27 | mitchuski | cred-spec #38 adopted this record's option 1 as written — a REQUIRED in-credential `salt`, 32 bytes, base-58-btc, mandatory-disclosure under SD suites, `v2` timing (stormer78 2026-09-25; bmiller59 +1); nothing for the proof side to change. The sixth-member line narrows: `taskDigestMultibase` leaves the credential under #58 and the citation's `credentialDigestMultibase` takes its place. Provenance carries the #48 context decision. State unchanged. |
 | 2026-09-30 | mitchuski | cred-spec #38 ruled by the credential maintainer (30 Sept): option 1 lands in the `v2` context. Until `v2`, a `v1` credential's digest references are still enumerable, which is the horizon an implementer should read. Provenance only; state unchanged. |
+| 2026-11-19 | mitchuski | cryptographic review (zkp-spec #25 (DenisPopov15, 2026-11-18)): the relation restated for the adopted placement — the salt is a member of the hashed bytes, H(JCS(credential with `salt`)), and H(bytes ∥ u) is option 2's different function; mandatory disclosure of the salt under selective-disclosure suites found to reopen the enumeration and to correlate presentations, with the proof side's requirement stated and the earlier reading on #38 withdrawn; in-circuit JSON reading named as a risk and the digest cost stated as a total; transcriptDigest stated as bound by record 003's clause. State unchanged. |
 
 #### Formal verification
 
@@ -2437,6 +2471,14 @@ Revisions within a state:
 | hypothesis | carries |
 |---|---|
 | H-digest | the declared digest is collision-free over (bytes, salt) (modelled as injective) |
+
+#### Reviews
+
+Recorded reviewer sign-off on this record's clauses; a review is not a state advance and confers no evidence state.
+
+| date | reviewer | scope | verdict | evidence |
+|---|---|---|---|---|
+| 2026-11-18 | Denys Popov (DenisPopov15) | cryptographic reading of the construction: the relation against the adopted salt placement, salt disclosure under selective-disclosure suites, in-circuit cost and JSON reading | `refined` | zkp-spec #25, record 022 points 1–3: all taken; point 2 is carried to the credential specification (cred-spec #38, PR #87), whose disposition it is |
 
 
 ### Construction 023 · Two-vouch admission proof — an applicant proves k ≥ 2 vouches from distinct current members to the issuing community, without disclosing which members
@@ -2477,6 +2519,7 @@ The issuing community learns that the applicant — the subject named in a pendi
 - the applicant's admission identifier — the subject the join request names and the VMC would be issued to; disclosed by construction, since the applicant is applying
 - context descriptor — the community and the join-request exchange (the Trust Tasks `vtc/join-requests` submission), so the proof cannot be replayed to another community or another request
 - transcriptDigest — the presentation transcript, bound to the join request
+- under a rotation-capable profile: spent_root — the community's root over its strictly sorted spent rotation tags at the epoch (record 025, issuance)
 
 #### Relation
 
@@ -2487,7 +2530,7 @@ The issuing community learns that the applicant — the subject named in a pendi
 5. the applicant's presentation key derives from the secret the VRCs' subject identifier(s) bind to; where the VRCs name different `pairwise` identifiers of the applicant, those identifiers open to the same secret — [[ref: key-binding]] ([[ref: construction record]] 004, [Holder binding (key from secret)](#construction-004-%C2%B7-holder-binding-(key-from-secret)))
 6. no voucher's membership handle is in the set under rl_root at the epoch — a vouch from a revoked member does not count — [[ref: non-revocation]] ([[ref: construction record]] 006, [Non-revocation against a status root](#construction-006-%C2%B7-non-revocation-against-a-status-root))
 7. the whole show is bound to transcriptDigest and to the context descriptor of this community and this join request — [[ref: transcript-bind]] ([[ref: construction record]] 003, [Transcript binding](#construction-003-%C2%B7-transcript-binding))
-8. under a rotation-capable profile (record 025), no voucher's leaf has its rotation tag in the community's spent-tag set at the epoch — a vouch under a secret rotated away does not count — [[ref: non-revocation]] ([[ref: construction record]] 025, [Secret rotation with enrolment continuity — a member replaces the secret behind its enrolment with the one it pre-committed, retiring the old enrolment without disclosing which it was](#construction-025-%C2%B7-secret-rotation-with-enrolment-continuity-%E2%80%94-a-member-replaces-the-secret-behind-its-enrolment-with-the-one-it-pre-committed%2C-retiring-the-old-enrolment-without-disclosing-which-it-was))
+8. under a rotation-capable profile (record 025), no voucher's leaf has its rotation tag in the community's spent-tag set at the epoch — a vouch under a secret rotated away does not count. Absence is proven against spent_root, the root over the strictly sorted spent tags; over an unsorted set a neighbour proof can pass for a tag that is present — [[ref: non-revocation]] ([[ref: construction record]] 025, [Secret rotation with enrolment continuity — a member replaces the secret behind its enrolment with the one it pre-committed, on the authority of that next secret, retiring the old enrolment without disclosing which it was](#construction-025-%C2%B7-secret-rotation-with-enrolment-continuity-%E2%80%94-a-member-replaces-the-secret-behind-its-enrolment-with-the-one-it-pre-committed%2C-on-the-authority-of-that-next-secret%2C-retiring-the-old-enrolment-without-disclosing-which-it-was))
 
 #### Disclosure set
 
@@ -2577,6 +2620,7 @@ Revisions within a state:
 | 2026-09-23 | mitchuski | formal model built (Lean, composed from the gadget library); no state change |
 | 2026-09-29 | mitchuski | PR #11 inline review (DenisPopov15, 28 Sept): options 0 and 3 folded into one blind-signature option that points to record 024; new does-not-establish line for the 007 bypass under that route; figures unchanged (none recorded). State unchanged. |
 | 2026-10-27 | mitchuski | formal review run 2: scope narrowed — clause 5's key derivation is not in the model (F4); clause 8 added from record 025's issuance — the rotation-tag check under a rotation-capable profile (F8); no state change |
+| 2026-11-19 | mitchuski | record 025's issuance read across (cryptographic review of 2026-11-18, zkp-spec #25): the rotation-tag clause names spent_root, the sorted spent-tag root, as a public input under a rotation-capable profile. The clause is specified and not built. State unchanged. |
 
 #### Formal verification
 
@@ -2639,6 +2683,7 @@ The issuing community learns that k pairwise-distinct eligible vetters of the li
 - the applicant's per-application identifier and join DID — disclosed by construction, since the applicant is applying
 - the challenge — minted by the community for this applicant and spent when the proof is counted
 - transcriptDigest over the challenge, the requirements digest, the join DID and every attestation's public values
+- under a rotation-capable profile: spent_root — the community's root over its strictly sorted spent rotation tags at the epoch (record 025, issuance)
 
 #### Relation
 
@@ -2649,7 +2694,7 @@ The issuing community learns that k pairwise-distinct eligible vetters of the li
 5. the attested identifier derives from the applicant's per-application secret, which the applicant holds — [[ref: key-binding]] ([[ref: construction record]] 004, [Holder binding (key from secret)](#construction-004-%C2%B7-holder-binding-(key-from-secret))) · runtime `runtimes/circom-gadget/circuits/vetting_bind.circom`
 6. the submission is bound to transcriptDigest — the community's challenge, the requirements digest, the join DID and every attestation's public values — [[ref: transcript-bind]] ([[ref: construction record]] 003, [Transcript binding](#construction-003-%C2%B7-transcript-binding)) · runtime `runtimes/circom-gadget/circuits/vetting_bind.circom`
 7. no attester is the applicant — [[ref: distinctness]] ([[ref: construction record]] 005, [Distinct member / distinct issuer](#construction-005-%C2%B7-distinct-member-%2F-distinct-issuer))
-8. under a rotation-capable profile (record 025), no attester's enrolment leaf has its rotation tag in the community's spent-tag set at the epoch — an attestation under a secret rotated away does not count — [[ref: non-revocation]] ([[ref: construction record]] 025, [Secret rotation with enrolment continuity — a member replaces the secret behind its enrolment with the one it pre-committed, retiring the old enrolment without disclosing which it was](#construction-025-%C2%B7-secret-rotation-with-enrolment-continuity-%E2%80%94-a-member-replaces-the-secret-behind-its-enrolment-with-the-one-it-pre-committed%2C-retiring-the-old-enrolment-without-disclosing-which-it-was))
+8. under a rotation-capable profile (record 025), no attester's enrolment leaf has its rotation tag in the community's spent-tag set at the epoch — an attestation under a secret rotated away does not count. Absence is proven against spent_root, the root over the strictly sorted spent tags; over an unsorted set a neighbour proof can pass for a tag that is present — [[ref: non-revocation]] ([[ref: construction record]] 025, [Secret rotation with enrolment continuity — a member replaces the secret behind its enrolment with the one it pre-committed, on the authority of that next secret, retiring the old enrolment without disclosing which it was](#construction-025-%C2%B7-secret-rotation-with-enrolment-continuity-%E2%80%94-a-member-replaces-the-secret-behind-its-enrolment-with-the-one-it-pre-committed%2C-on-the-authority-of-that-next-secret%2C-retiring-the-old-enrolment-without-disclosing-which-it-was))
 
 #### Disclosure set
 
@@ -2663,7 +2708,7 @@ The issuing community learns that k pairwise-distinct eligible vetters of the li
 
 - that the k attesters are k distinct people — distinct tags mean distinct vetter secrets; a vetter who hands its secret to another lets one person attest under two tags
 - that a transferable-token budget limits each vetter: vetters can pool tokens. A per-vetter quota requires a profile that binds authorized spends to a stable enrolled secret and bounds slots, or another construction demonstrating equivalent enforcement. Neither profile bounds distinct people or prevents sharing a secret (DG-024-4)
-- that no attester is the applicant, in the Groth16 route — clause 7 is not built there; it holds only while applicants are outside the vetter set
+- that no attester is the applicant, in the Groth16 route — clause 7 is not built there and no fixture rejects a self-attestation: an applicant who is also an eligible vetter can supply one of its own k attestations. Until the clause is built the route's stated policy is that applicants are outside the eligible-vetter set (issuance); where a community cannot hold that policy it reads the criterion as k − 1 attestations from vetters other than the applicant. In any route the clause compares secrets, not people: a vetter applying under a fresh per-application secret is not distinguished from another applicant
 - that the vetting session happened as attested — the vetter's check of the person is outside the proof, as on the named path
 - anything to a party other than the issuing community — it keeps the vetter set and verifies the proof; no third party can audit that admission followed the criterion
 - that the applicant is admitted — verifying the proof, counting it under policy and issuing the membership grant are three acts (WG-04)
@@ -2672,10 +2717,11 @@ The issuing community learns that k pairwise-distinct eligible vetters of the li
 - that sequential replay tests establish concurrent or durable single-use behavior: the ledger must atomically prevent additional counting across requests, retries and restarts; the current asynchronous lab harness requires further review
 - the size of the anonymity set under an event label: a spend under `event-mode` narrows 'some vetter in this community' to 'some vetter at this event'; the framework's three mitigations — group floor, expiry, an `eventId` that names a gathering — are all MUST for the consumer (trust-tasks-tf PR #620) and bound that narrowing; the proof does not
 - a commitment in the applicant's identifier — the PCS binds voucher and attestation linkage to an enrolment secret inside the credential system, not to a DID verification-method commitment; component 007 (WG-14) is bypassed by this route, and a community admitting over it gets no 007 property (PR #11 review, 2026-09-28)
+- soundness of the Groth16 route outside the lab: the lab setup has one contributor and fixed entropy, and whoever holds a setup's randomness can forge every proof of that circuit. The measurements stand; the soundness claim needs the setup a profile names (issuance)
 
 #### Adversary, per claim
 
-- **verifier · issuer-verifier-colluding** — the community learns which of its eligible vetters attested no better than chance over the vetter set, less whatever the disclosed per-statement facts narrow that set
+- **verifier · issuer-verifier-colluding** — the community learns which of its eligible vetters attested no better than chance over the vetters that do not collude with it, less whatever the disclosed per-statement facts narrow that set. A vetter colluding with the community recomputes its own tag for this applicant from its secret and is confirmed or excluded, so the anonymity set is the non-colluding eligible vetters — and it is empty where all but the k attesters collude
 - **verifier** — one vetter's attestations for two applicants cannot be linked through their tags or serials
 
 #### Horizon
@@ -2693,7 +2739,7 @@ The issuing community learns that k pairwise-distinct eligible vetters of the li
 
 Families: `accepts` · `rejects-unsat` · `rejects-verify` · `unlinkable` · `current`
 
-Rejection codes: `tag-duplicate (two attestations from one vetter)`, `token-serial-spent (conflicting or additional counted reuse; the lab profile refuses every repeat)`, `vetter-not-enrolled (unsat)`, `vetter-cap-exceeded (secret-derived profile only: a slot at or above the cap)`, `vetter-root-stale (verify: an attestation made under a replaced vetter-set commitment)`, `statement-metadata-mismatch (verify)`, `requirements-digest-mismatch (verify)`, `join-did-mismatch (verify: an attestation made for another applicant)`, `binding-proof-invalid (unsat: a binding made without the applicant secret)`, `challenge-replayed (verify)`, `challenge-not-minted (verify)`, `attestation-count-below-k`, `unsupported-extension (the criterion's `extCritical` names a namespace the client does not implement: it stops before gathering named statements)`
+Rejection codes: `tag-duplicate (two attestations from one vetter)`, `token-serial-spent (conflicting or additional counted reuse; the lab profile refuses every repeat)`, `vetter-not-enrolled (unsat)`, `vetter-cap-exceeded (secret-derived profile only: a slot at or above the cap)`, `vetter-root-stale (verify: an attestation made under a replaced vetter-set commitment)`, `statement-metadata-mismatch (verify)`, `requirements-digest-mismatch (verify)`, `join-did-mismatch (verify: an attestation made for another applicant)`, `binding-proof-invalid (unsat: a binding made without the applicant secret)`, `challenge-replayed (verify)`, `challenge-not-minted (verify)`, `attestation-count-below-k`, `unsupported-extension (the criterion's `extCritical` names a namespace the client does not implement: it stops before gathering named statements)`, `attester-is-applicant (clause 7 — not built in the Groth16 route and no fixture there; the stated policy stands in for it)`
 
 #### Construction options
 
@@ -2701,7 +2747,7 @@ Rejection codes: `tag-duplicate (two attestations from one vetter)`, `token-seri
 
 | construction | cost | status | source |
 |---|---|---|---|
-| the construction the chair named on PR #11 for the Linux Plumbers integration (Berkeley, with Glenn Gore integrating) — the Predicate Credential System (PCS): Σ-PS (Pointcheval–Sanders) credential base with the key-injective PRF Tag_DDH over BLS12-381, generalized Schnorr proofs under strong Fiat–Shamir; the applicant proves it holds attestations from k pairwise-distinct credentialed vetters, none of them itself, and receives a credential. SOURCE PUBLIC since 2026-09-28: OpenVTC/predicate-credential-system (MIT, arkworks 0.6, research artifact, not audited) at main 4f4edf5 — crate plus the demo pcs-vetting-prototype (Σ-PS + Tag_DDH; end-to-end tests: admission from two hidden vetters with no member id or vetter id in the facts; requestMore then resubmission counts once; one vetter counts once across submissions; a double-spent token does not count and the VTC cannot name anyone). Its five Trust Tasks are public (issuance lines; trust-tasks-tf PR #618/#620, 2026-09-23). Under this route the attestation linkage is bound to the vetter secret usk inside the credential system, not to a DID verification-method commitment (component 007 bypassed — see does-not-establish) | constructor-reported, from the repository README and asserted by its tests (fixed-format encoding over BLS12-381, not measured here): Σ-PS attestation 240 B, proof 1,392 B at k = 5, credential 96 B; Σ-BBS 416 / 2,272 / 112 B; Σ-EQ 480 / 2,512 / 192 B. Running times: criterion benches exist (benches/pcs.rs at k = 5) but no figures are published in the repository; the ~12 ms prove-and-verify quoted in review is unsourced here and is not recorded | unmeasured | OpenVTC/predicate-credential-system main 4f4edf5 (2026-09-28: import, demo, CI) — README §Instantiations, docs/testing-and-benchmarks.md, demo/README.md · zkp-spec PR #11 (ScottJeezey 2026-09-21) · trust-tasks-tf PR #618 and PR #620 (stormer78 2026-09-23) · OpenVTC/governance PR #25 (2026-09-24) · zkp-spec PR #11 inline review (DenisPopov15 2026-09-28/29: options 0 and 3 of record 023 are this construction; a local run of a reference flow confirmed, on a commit not on any public branch, so the record pins the public main) |
+| the construction the chair named on PR #11 for the Linux Plumbers integration (Berkeley, with Glenn Gore integrating) — the Predicate Credential System (PCS): Σ-PS (Pointcheval–Sanders) credential base with the key-injective PRF Tag_DDH over BLS12-381, generalized Schnorr proofs under strong Fiat–Shamir; the applicant proves it holds attestations from k pairwise-distinct credentialed vetters, none of them itself, and receives a credential. SOURCE PUBLIC since 2026-09-28: OpenVTC/predicate-credential-system (MIT, arkworks 0.6, research artifact, not audited) at main 4f4edf5 — crate plus the demo pcs-vetting-prototype (Σ-PS + Tag_DDH; end-to-end tests: admission from two hidden vetters with no member id or vetter id in the facts; requestMore then resubmission counts once; one vetter counts once across submissions; a double-spent token does not count and the VTC cannot name anyone). Its five Trust Tasks are public (issuance lines; trust-tasks-tf PR #618/#620, 2026-09-23). Under this route the attestation linkage is bound to the vetter secret usk inside the credential system, not to a DID verification-method commitment (component 007 bypassed — see does-not-establish). Assumptions as the review of 2026-11-18 read them: unforgeability rests on the Pointcheval–Sanders assumption, an interactive assumption justified in the generic group model, and tag unlinkability on DDH; the strong Fiat–Shamir transform, with the statement hashed alongside the commitments, is the sound variant; the implementation is unaudited, as its repository states | constructor-reported, from the repository README and asserted by its tests (fixed-format encoding over BLS12-381, not measured here): Σ-PS attestation 240 B, proof 1,392 B at k = 5, credential 96 B; Σ-BBS 416 / 2,272 / 112 B; Σ-EQ 480 / 2,512 / 192 B. Running times: criterion benches exist (benches/pcs.rs at k = 5) but no figures are published in the repository; the ~12 ms prove-and-verify quoted in review is unsourced here and is not recorded | unmeasured | OpenVTC/predicate-credential-system main 4f4edf5 (2026-09-28: import, demo, CI) — README §Instantiations, docs/testing-and-benchmarks.md, demo/README.md · zkp-spec PR #11 (ScottJeezey 2026-09-21) · trust-tasks-tf PR #618 and PR #620 (stormer78 2026-09-23) · OpenVTC/governance PR #25 (2026-09-24) · zkp-spec PR #11 inline review (DenisPopov15 2026-09-28/29: options 0 and 3 of record 023 are this construction; a local run of a reference flow confirmed, on a commit not on any public branch, so the record pins the public main) |
 | vetters named — the named path: each vetter issues a signed vetting statement and the community counts vetter DIDs. No proof; the privacy claims above do not apply | zero | unmeasured | trust-tasks-tf `vtc/join-requests/manifest/0.2` (VettingRequirements) |
 | Groth16 / BN254 / Poseidon (lab) — each vetter proves its own attestation (vetting_attest: leaf of the vetter-set root, tag = Poseidon(tag, secret, applicantId), serial = Poseidon(tag, secret, period, slot) with slot < cap, statement bound) and the applicant proves one binding (vetting_bind: applicantId from the applicant secret, transcript over the challenge, requirements digest, join DID and every attestation). The tag must come from the vetter's secret — a tag derived from anything public the community could recompute for every vetter — and the applicant does not hold vetters' secrets, so the route takes k + 1 proofs. Removing one vetter is a new root with nobody re-enrolled; the cap is per vetter and in-circuit, with no token issuance; tag distinctness is checked by the community over the public tags; clause 7 is not built | vetting_attest 5,677 constraints, vetting_bind 238 (--O2); one attestation proof ~813 ms, made by each vetter at its own time, the binding ~123 ms (snarkjs/wasm, Node 22, win32/x64); community verification at k = 5 ~110 ms; submission at k = 5 1,376 B with compressed points (2,144 B uncompressed), computed from point sizes, 7,009 B as snarkjs JSON; lab-only trusted setup (one contributor, fixed entropy) | **measured** | evidence repository runtimes/circom-gadget/test-vetting.mjs, run 2026-09-23 — H1–H12 12/12 |
 
@@ -2715,6 +2761,8 @@ Rejection codes: `tag-duplicate (two attestations from one vetter)`, `token-seri
 - name the admission policy evaluator and version: it applies per-method floors, independence caps, validity and eligibility rules to verified facts before a separate issuance decision. Assign these checks explicitly when the proof harness does not implement them
 - the vetter side of option 1 has a public wire (trust-tasks-tf PR #618 and PR #620, merged 2026-09-23): `vtc/vetting/vetters/pcs-root/0.1` — enrolment for a class label; the community checks a live vetter grant, no credential under this label yet and the identifier this member was bound to, then signs a commitment it cannot open · `vtc/vetting/vetters/pcs-tokens/0.1` — one tick of an unconditional token drip at the community's published rate (a fetch that happened only when someone was busy would announce that they were busy; the quota is the community's to refuse) · `vetting/attestation/0.1` — vetter to applicant, the facts of the session with no issuer; `identifierScope: any`; the applicant MUST NOT record the delivering `issuer` beside it; dates, not timestamps, on the validity window · `vtc/vetting/vetters/event-mode/0.1` — a separate token label for a named event with its own rate, expiry and a group floor, requested by the vetter and approved by someone else (no Trust Task for the approval, by design). These are the framework's obligations behind clauses 2–5 and the challenge; the proof reads their outputs as witness and adds nothing to their semantics
 - DID-rooted enrolment (WG-17): where a vetter's or an applicant's enrolment secret is to be bound to a DID, the binding is made once, at enrolment — the enrolling party proves the secret is the one behind the commitment verification method of its DID document (record 007's relation, run against that document version). Signing-key rotations then leave the vetter-set commitment untouched; a vetter's secret rotation takes effect at the next vetter-set period, which this record's horizon already bounds; a hidden enrolment that must survive a secret rotation inside a period is record 025's
+- self-attestation, Groth16 route: until clause 7 is built the community's criterion states that applicants are outside the eligible-vetter set — true of a first admission, where vetters are members and the applicant is not — or sets k one above the number of independent attestations it requires
+- setup: a profile on a pairing-based proving system with a circuit-specific setup (Groth16) names a multi-party setup ceremony with a published transcript, or a transparent proving system; a single-contributor or fixed-entropy setup is a lab artefact and conveys soundness to no one else (Security Considerations, trusted setup)
 
 #### Provenance
 
@@ -2750,6 +2798,8 @@ Revisions within a state:
 | 2026-09-30 | mitchuski | the named-statement path beside this record moved to registry predicates (cred-spec PR #70, registry `vetted/1`; trust-tasks-tf PR #691 in draft): the eligible-vetter set is derived from community-issued authority credentials rather than role endorsements. Provenance only; no clause, option or figure changes. State unchanged. |
 | 2026-10-02 | mitchuski | an issuance line for DID-rooted enrolment (task-force discussion of 2 October; DenisPopov15's 28 September point that the PCS secret is set at enrolment with no DID verification-method commitment): the binding is an enrolment-time act, rotation lands at the period boundary, record 025 for rotation inside a period. No clause, option or figure changes. State unchanged. |
 | 2026-10-27 | mitchuski | formal review run 2: clause 8 added from record 025's issuance — the rotation-tag check under a rotation-capable profile (F8); no state change |
+| 2026-11-19 | mitchuski | cryptographic review (zkp-spec #25 (DenisPopov15, 2026-11-18)): the anonymity claim reworded — the set is the non-colluding eligible vetters; the self-attestation gap of the Groth16 route given a stated policy, a k − 1 reading and a rejection code marked unbuilt; option 1's assumptions recorded; a profile's setup requirement stated and the lab setup's soundness limit named. No clause, measurement or state change. |
+| 2026-11-19 | mitchuski | record 025's issuance read across (cryptographic review of 2026-11-18, zkp-spec #25): the rotation-tag clause names spent_root, the sorted spent-tag root, as a public input under a rotation-capable profile. The clause is specified and not built. State unchanged. |
 
 #### Formal verification
 
@@ -2778,25 +2828,33 @@ Revisions within a state:
 | H-applicant (ApplicantSecret) | an applicant holding a credential holds it over its own key; vacuous for one holding none |
 | H-fresh, H-tag | completeness only: two members never share a secret; tags do not collide for one applicant |
 
+#### Reviews
 
-### Construction 025 · Secret rotation with enrolment continuity — a member replaces the secret behind its enrolment with the one it pre-committed, retiring the old enrolment without disclosing which it was
+Recorded reviewer sign-off on this record's clauses; a review is not a state advance and confers no evidence state.
 
-*This record is at state `specified`: it is written and validates; no runtime has measured it. Costs marked conjecture are conjecture (drafting rule 4). Informative.*
+| date | reviewer | scope | verdict | evidence |
+|---|---|---|---|---|
+| 2026-11-18 | Denys Popov (DenisPopov15) | cryptographic reading of the construction and of the lab circuit's logic: the colluding-vetter anonymity claim, clause 7 in the Groth16 route, option 1's assumptions, the lab setup | `refined` | zkp-spec #25, record 024 points 1–4: the lab logic (tag per vetter per applicant, serial quota, applicant binding) read as correct; all four points taken as wording, policy and issuance lines |
+
+
+### Construction 025 · Secret rotation with enrolment continuity — a member replaces the secret behind its enrolment with the one it pre-committed, on the authority of that next secret, retiring the old enrolment without disclosing which it was
+
+*This record is at state `constructed`: a runtime exists and has measured at least one construction option; no independent party has reproduced it. Informative.*
 
 | | |
 |---|---|
 | kind | composed |
-| state | `specified` |
+| state | `constructed` |
 | priority | P2 |
 | constructor | mitchuski |
 | requested by | ScottJeezey (chair, task-force discussion, 2026-10-02) — specified by the ZKP TF co-chair |
 | request | the chair's question on the admission proof and DIDs (task-force discussion, 2026-10-02): whether the admission proof starts from a DID, and what a DID as the starting point would need — DIDs let a controller keep several identifiers and rotate keys over time, while the proofs are rooted in a holder secret · record 007's horizon (a rotation restarts the co-control clause) · zkp-spec PR #11 inline review on record 023 (DenisPopov15, 2026-09-28): the PCS secret is set at enrolment and no DID verification-method commitment is involved |
 
-**Composes:** [001](#construction-001-%C2%B7-set-membership-over-an-accredited-root) ∧ [002](#construction-002-%C2%B7-scoped-nullifier-(reuse-detection)) ∧ [003](#construction-003-%C2%B7-transcript-binding) ∧ [006](#construction-006-%C2%B7-non-revocation-against-a-status-root) — a [[ref: composed construction]]: one transcript, one [[ref: disclosure set]], written fresh.
+**Composes:** [001](#construction-001-%C2%B7-set-membership-over-an-accredited-root) ∧ [002](#construction-002-%C2%B7-scoped-nullifier-(reuse-detection)) ∧ [003](#construction-003-%C2%B7-transcript-binding) ∧ [006](#construction-006-%C2%B7-non-revocation-against-a-status-root) ∧ [009](#construction-009-%C2%B7-hidden-value-equality-across-credentials) — a [[ref: composed construction]]: one transcript, one [[ref: disclosure set]], written fresh.
 
 #### Statement
 
-The issuing community learns that the presenter holds the secret behind an unrevoked enrolment leaf under its current membership root, that this leaf pre-committed to the replacement leaf now presented, and the rotation tag of that secret — so the community can retire the old secret by its tag and admit the replacement leaf, without learning which leaf rotated or linking the replacement to it.
+The issuing community learns that the presenter holds the next secret pre-committed by an unrevoked enrolment leaf under its current membership root, that the replacement leaf now presented is a leaf of that next secret and carries the same revocation handle, and the rotation tag of the retiring leaf — so the community can retire the old secret by its tag and admit the replacement leaf, without learning which leaf rotated or linking the replacement to it. The current secret is not a witness: a lost secret is replaced as a compromised one is.
 
 **Need.** an enrolment rooted in a holder secret must outlive the loss or compromise of that secret, as a DID outlives a key rotation: the member keeps its standing, the old secret stops presenting, and — where the community must not know which enrolment is whose — the community learns neither which enrolment rotated nor a link between the old leaf and the new one
 
@@ -2804,24 +2862,28 @@ The issuing community learns that the presenter holds the secret behind an unrev
 
 *Never leaves the holder.*
 
-- the current secret s and the enrolment leaf L = Com(s, N; r) it opens, where N = H(L′) is the pre-rotation digest committed when L was minted
+- the opening of the enrolment leaf L = Com(h, N, ρ; r): h = H(s), the image of the current secret — not s itself; N = Hpre(H(s′)), the pre-rotation digest, a commitment to the next secret's image fixed when L was minted; ρ, the revocation handle; and r
+- the next secret s′ and the opening of the replacement leaf L′ = Com(H(s′), N′, ρ; r′), minted at the rotation with its own pre-rotation digest N′
 - the Merkle path of L to root_C
-- the non-revocation witness of L's membership handle under rl_root at the epoch
+- the non-revocation witness of ρ under rl_root at the epoch
 
 #### Public inputs
 
 - root_C and rl_root at a stated epoch — the community's membership and revocation roots
-- the replacement leaf L′ = Com(s′, N′; r′), as the holder minted it — the next secret s′ and the next pre-rotation digest N′ stay inside it
+- the community identifier — it scopes the rotation tag
+- the replacement leaf L′, as the holder minted it — the next secret's image, the next pre-rotation digest N′ and the handle ρ stay inside it
 - the rotation tag t, compared by the community against its spent-tag set in the clear
 - transcriptDigest — the rotation request this proof is bound to
 
 #### Relation
 
-1. L opens to (s, N; r) and is a leaf under root_C — [[ref: set-membership]] ([[ref: construction record]] 001, [Set membership over an accredited root](#construction-001-%C2%B7-set-membership-over-an-accredited-root))
-2. L's membership handle is not revoked under rl_root at the epoch — a member removed by the community cannot rotate into a fresh leaf — [[ref: non-revocation]] ([[ref: construction record]] 006, [Non-revocation against a status root](#construction-006-%C2%B7-non-revocation-against-a-status-root))
-3. H(L′) = N: the replacement presented is the one L pre-committed — any other replacement is unsatisfiable, so a party holding a stolen s can move the enrolment only to the leaf the member chose, whose secret it does not hold — [[ref: commitment-open]]
-4. t = PRF(s; rotation context ‖ community): one tag per secret per community, so a second rotation from the same secret repeats t and is refused — [[ref: nullifier]] ([[ref: construction record]] 002, [Scoped nullifier (reuse detection)](#construction-002-%C2%B7-scoped-nullifier-(reuse-detection)))
-5. the proof is bound to this rotation request's transcriptDigest — [[ref: transcript-bind]] ([[ref: construction record]] 003, [Transcript binding](#construction-003-%C2%B7-transcript-binding))
+1. L opens to (h, N, ρ; r) and is a leaf under root_C — opened by the secret's image h, so the proof does not need s — [[ref: set-membership]] ([[ref: construction record]] 001, [Set membership over an accredited root](#construction-001-%C2%B7-set-membership-over-an-accredited-root)) · runtime `runtimes/circom-gadget/circuits/rotation.circom`
+2. the handle ρ is not revoked under rl_root at the epoch — a member removed by the community cannot rotate into a fresh leaf — [[ref: non-revocation]] ([[ref: construction record]] 006, [Non-revocation against a status root](#construction-006-%C2%B7-non-revocation-against-a-status-root)) · runtime `runtimes/circom-gadget/circuits/rotation.circom`
+3. N = Hpre(H(s′)) for an s′ the presenter knows: the rotation is authorised by the pre-committed next secret, as a key event log authorises a rotation by the pre-rotated key — a party holding only a stolen s cannot rotate, and a member who has lost s can — [[ref: commitment-open]] · runtime `runtimes/circom-gadget/circuits/rotation.circom`
+4. L′ opens to (H(s′), N′, ρ′; r′): the replacement presented is a leaf of that next secret, carrying the pre-rotation digest N′ its holder chose for the rotation after — [[ref: commitment-open]] · runtime `runtimes/circom-gadget/circuits/rotation.circom`
+5. ρ′ = ρ: the replacement carries the retiring leaf's revocation handle, shown equal without disclosing it — the community's power to revoke the member survives the rotation — [[ref: hidden-equality]] ([[ref: construction record]] 009, [Hidden-value equality across credentials](#construction-009-%C2%B7-hidden-value-equality-across-credentials)) · runtime `runtimes/circom-gadget/circuits/rotation.circom`
+6. t = PRF(h; rotation context ‖ community): one tag per enrolment leaf per community, so a second rotation of the same leaf repeats t and is refused — [[ref: nullifier]] ([[ref: construction record]] 002, [Scoped nullifier (reuse detection)](#construction-002-%C2%B7-scoped-nullifier-(reuse-detection))) · runtime `runtimes/circom-gadget/circuits/rotation.circom`
+7. the proof is bound to this rotation request's transcriptDigest — [[ref: transcript-bind]] ([[ref: construction record]] 003, [Transcript binding](#construction-003-%C2%B7-transcript-binding)) · runtime `runtimes/circom-gadget/circuits/rotation.circom`
 
 #### Disclosure set
 
@@ -2833,26 +2895,29 @@ The issuing community learns that the presenter holds the secret behind an unrev
 
 #### Does not establish
 
-- that the presenter is the member who enrolled: anyone holding s can rotate. Pre-rotation limits a thief to moving the enrolment to the replacement the member committed, which the thief cannot open; it does not stop the thief presenting under s until the rotation lands
-- that the holder can open L′ — the replacement is accepted as committed; a member who loses s′ as well has no route but re-enrolment
+- that the presenter is the member who enrolled: the rotation authority is s′ together with the opening of L. A party holding a stolen s can present until the rotation lands but cannot rotate; a party holding the stolen rotation material takes the enrolment over, as the holder of a pre-rotated key takes over an identifier. The next secret is kept as a key event log's next keys are kept — offline, and apart from s (issuance)
+- recovery from losing both: a member who loses s and the rotation material — s′, or the opening of L — has no route but re-enrolment
 - that the old secret stops presenting: that holds only where the enclosing presentation records prove the leaf's rotation tag absent from the community's spent-tag set (issuance)
 - uniqueness within one context across the rotation: per-context nullifiers (record 002) derive from the secret, so a context whose epoch spans the rotation can see one nullifier from s and one from s′. The default closes this by making a rotation take effect from the next context epoch (issuance); nullifiers derived from a value the leaf carries forward are the alternative left to WG-17
 - unlinkability against timing and counts: the spent-tag set shows how many rotations a community has admitted, and a rotation admitted alone in its epoch is identifiable by its timing. The old leaf is hidden among the leaves under root_C, and a replacement among the replacements admitted in the same batch — the anonymity set is that batch (issuance)
+- that the community cannot link a member to its handle: the community revokes by ρ and so knows which member a handle belongs to; what it does not learn is which leaf under root_C carries it, before or after a rotation. A handle disclosed in a presentation would link the member's leaves — non-revocation proofs keep it hidden (record 006)
 - any relationship to a DID — the leaf may be bound to a DID's commitment verification method at enrolment or to none; this record reads the leaf only
 - rotation of a public identifier: where the community may know which DID is enrolled, rotation is the DID method's (a pre-rotation digest in a did:webvh log or a KERI event log) and needs no proof (option 3)
 - unlinkability of a DID-bound enrolment's rotation, read across the layers together: where the leaf's secret is bound to the commitment verification method of a public DID, a secret rotation also changes that commitment in the public DID log. A community that saw the DID at enrolment can match the log entry to the rotation and link L, L′ and the DID. The claim against the registry operator above does not hold for such an enrolment unless the two updates are decorrelated — the DID log change and the leaf rotation published in different epochs, the leaf rotation inside a batch — or the rotation is accepted as public (option 3)
 - unlinkability across communities that hold one binding: an enrolment bound to the same DID commitment in several communities lets those communities link the memberships through that commitment. Binding to an identifier used with one community only, or to a community-scoped commitment Com(PRF(s, community)), keeps each binding to its community (Integration §Rotation under the identifier commitment profile)
+- that one leaf has one replacement leaf: the pre-rotation digest fixes the next secret, not the next leaf, so the holder of s′ can mint more than one replacement. The first admitted spends the tag and the others are refused (rotation-tag-spent); nothing is gained by minting a second
+- the presentation side of a rotation-capable profile: the tag-absence clause that records 010, 023 and 024 carry is specified and not built — the lab circuit is the rotation itself
 
 #### Adversary, per claim
 
-- **registry-operator · verifier** — for an enrolment not bound to a public DID, the community operating the roots learns which secret rotated only as its tag t — not which leaf under root_C, and not a link from L′ to L beyond the batch the rotation was admitted in
+- **registry-operator · verifier** — for an enrolment not bound to a public DID, the community operating the roots learns which leaf rotated only as its tag t — not which leaf under root_C, not the handle the two leaves share, and not a link from L′ to L beyond the batch the rotation was admitted in
 - **verifiers-colluding** — verifiers comparing per-context nullifiers from before and after a rotation learn no link between them: t is scoped to the rotation context, which no presentation context shares
 
 #### Horizon
 
 - one rotation per pre-rotation digest — L′ carries N′, which the next rotation spends
 - the root epoch: the replacement leaf presents once the community publishes a root containing it, and the old secret stops presenting once the spent-tag set the enclosing records read contains t
-- the commitment, hash and PRF cryptoperiod
+- the commitment, hash and PRF cryptoperiod; the custody of the next secret, for as long as it waits
 
 *Quantum horizon* — read against Security Considerations item 8:
 
@@ -2861,9 +2926,9 @@ The issuing community learns that the presenter holds the secret behind an unrev
 
 #### Conformance fixtures
 
-Families: `accepts` · `rejects-unsat` · `rejects-verify` · `unlinkable`
+Families: `accepts` · `rejects-unsat` · `rejects-verify` · `unlinkable` · `current`
 
-Rejection codes: `replacement-not-precommitted (unsat: H(L′) ≠ N)`, `leaf-revoked (unsat: the enrolment's membership handle is revoked under rl_root)`, `rotation-tag-spent (verify-fail: t is already in the community's spent-tag set — a second rotation from one secret)`
+Rejection codes: `next-secret-not-precommitted (unsat: the presenter holds no s′ with Hpre(H(s′)) = N — a party holding s alone cannot rotate)`, `revocation-handle-changed (unsat: L′ carries a handle other than L's)`, `leaf-revoked (unsat: the enrolment's handle is revoked under rl_root)`, `leaf-not-enrolled (unsat: the opened leaf is not under root_C)`, `rotation-tag-spent (verify-fail: t is already in the community's spent-tag set — a second rotation of one leaf)`, `transcript-digest-mismatch (verify-fail: the proof was made for another rotation request)`, `membership-root-stale · revocation-root-stale (verify-fail: the proof was made against a root no longer in force)`
 
 #### Construction options
 
@@ -2871,18 +2936,21 @@ Rejection codes: `replacement-not-precommitted (unsat: H(L′) ≠ N)`, `leaf-re
 
 | construction | cost | status | source |
 |---|---|---|---|
-| Poseidon commitments and a Poseidon PRF inside the membership circuit — the lab's set-membership and scoped-nullifier gadgets (records 001, 002) with one added hash opening for N | a membership proof plus one hash and one PRF evaluation — of the order of the lab's runtime 01–03 membership circuit (conjecture for this record, not measured) | unmeasured | evidence repository runtimes 01–03 (Poseidon-Merkle membership, scoped nullifier) |
-| pre-rotation as KERI specifies it for key event logs — an inception or rotation event commits the digest of the next key set, which only a later rotation reveals — applied to the enrolment leaf, so the same discipline holds for an enrolment the community must not identify | as option 1; this option names the discipline, not a separate circuit | unmeasured | Trust over IP KERI specification (pre-rotation); did:webvh specification (`nextKeyHashes`) |
+| Groth16 / BN254 / Poseidon (lab) — one circuit: the enrolment leaf Poseidon(tag, image, pre-rotation digest, handle, blinding) under a depth-20 root; non-revocation as one inclusion of a range leaf (an adjacent pair of the strictly sorted handle list) and two 128-bit comparisons; the next secret hashed to its image and to the pre-rotation digest; the replacement leaf recomputed from that image and the same handle signal; the rotation tag from the image and the community; the transcript digest constrained. The current secret is not an input | 11,987 constraints (--O2), 6 public signals; one proof ~1.3 s (snarkjs/wasm, Node 22, win32/x64), made once per rotation; verification ~21 ms; 320 B with compressed points (448 B uncompressed), computed from point sizes, 1,198 B as snarkjs JSON; lab-only trusted setup (one contributor, fixed entropy) | **measured** | evidence repository runtimes/circom-gadget/test-rotation.mjs, run 2026-11-19 — R1–R13 13/13 |
+| pre-rotation as KERI specifies it for key event logs — an inception or rotation event commits the digest of the next key set, and the rotation that reveals those keys is authorised by them, not by the current keys — applied to the enrolment leaf, so the same discipline, with the same recovery from loss, holds for an enrolment the community must not identify | as option 1; this option names the discipline, not a separate circuit | unmeasured | Trust over IP KERI specification (pre-rotation); did:webvh specification (`nextKeyHashes`) |
 | no proof — public identifiers: the DID method's own rotation (a did:webvh log entry honouring `nextKeyHashes`, or a KERI rotation event) carries the commitment verification method forward or replaces it, and the community re-reads the DID document. Usable where the community may know which DID is enrolled — the vetters of record 024, a public organisation | zero constraints; the cost is the identifier's public enrolment | unmeasured | did:webvh specification; Integration §Rotation under the identifier commitment profile |
 
 #### Issuance requirements
 
-- under a rotation-capable profile every enrolment leaf carries a pre-rotation digest N; a leaf minted without one cannot rotate under this record, and its member re-enrols
-- the presentation and admission records that read an enrolment leaf (010, 023, 024) gain one non-revocation clause under a rotation-capable profile: the leaf's rotation tag is absent from the community's spent-tag set at the epoch. Without it a rotated-away secret still presents
+- under a rotation-capable profile every enrolment leaf has the form Com(H(s), N, ρ; r): the image of the presenting secret rather than the secret, a pre-rotation digest N = Hpre(H(s′)), and the revocation handle ρ. A leaf minted without N cannot rotate under this record, and its member re-enrols. Presentation records open the leaf with s and check H(s) in the circuit — one hash more than a leaf over the raw secret
+- the leaf pre-commits to the next secret, not to the next leaf. The replacement leaf is minted at the rotation, under the same handle and with its own N′; a leaf that committed to the whole next leaf would need that leaf's successor to exist first, and so on without end — found when the circuit was built. The member keeps the rotation material — s′ and the opening (h, N, ρ, r) of L — apart from s, as next keys are kept. None of it presents: a presentation needs s. A profile may derive the rotation material from s′ alone, so that one stored secret recovers the enrolment (WG-17)
+- the community assigns or learns the handle ρ at enrolment and revokes by it; ρ appears in no public signal of this record or of a presentation
+- the presentation and admission records that read an enrolment leaf (010, 023, 024) gain one non-revocation clause under a rotation-capable profile: the leaf's rotation tag is absent from the community's spent-tag set at the epoch. Without it a rotated-away secret still presents. The spent-tag set is committed as rl_root is — a root over strictly sorted tags, published per epoch and added to those records' public inputs — because the absence proof is a neighbour proof, and over an unsorted set adjacent neighbours can bracket a tag that is present (record 006, issuance)
 - the rotation context string is fixed by the profile and differs from every presentation context, so a rotation tag never equals a presentation nullifier
 - where the leaf is bound to a DID, the binding is made once, at enrolment: the applicant proves that the leaf's secret s is the secret behind the commitment verification method of its DID document (record 007's relation, run against that DID document version). Signing-key rotations of the DID then leave the leaf untouched; only a change of the secret runs this record (Integration §Rotation under the identifier commitment profile)
 - rotations are admitted in batches at the root epoch: the community collects rotation requests, appends their replacement leaves together and publishes the spent tags together, and states the batch size it waits for; a rotation is not admitted alone unless the member accepts the timing linkage
 - default for per-context nullifiers: a rotation admitted at an epoch takes effect in each presentation context from that context's next epoch — presentations under s′ in a context are accepted only after the context epoch in which s was last usable has closed (WG-17 may replace this with nullifiers carried forward by the leaf)
+- the lab route commits the revocation list as range leaves — one leaf per adjacent pair of the strictly sorted handle list, with sentinels at both ends — so non-revocation is one inclusion proof and two comparisons, and handles are 128-bit values. A registry that commits an unsorted list lets a revoked handle through (fixture R12); the spent-tag root takes the same form and carries the same duty
 
 #### Provenance
 
@@ -2892,6 +2960,8 @@ Rejection codes: `replacement-not-precommitted (unsat: H(L′) ≠ N)`, `leaf-re
 - zkp-spec PR #11 inline review on record 023 (DenisPopov15, 2026-09-28): the PCS secret is set at enrolment, with no DID verification-method commitment
 - Trust over IP KERI specification — pre-rotation of the next key-set digest
 - did:webvh specification — `nextKeyHashes` pre-rotation in the DID log
+- zkp-spec #25 (DenisPopov15, 2026-11-18): the rotation as first specified needed the current secret, so a lost secret could not be replaced, and gave the replacement a fresh revocation handle, so a rotation escaped revocation; the spent-tag set needs record 006's sortedness
+- evidence repository runtimes/circom-gadget (rotation.circom, harness-rotation.mjs, test-rotation.mjs), 2026-11-19: the Groth16 route built and measured; building it showed that a pre-rotation digest over the whole next leaf cannot be minted, and the digest now commits to the next secret's image
 - commit: github.com/mitchuski/dtgwg-zkp-mage
 
 #### Record history
@@ -2900,12 +2970,15 @@ Rejection codes: `replacement-not-precommitted (unsat: H(L′) ≠ N)`, `leaf-re
 |---|---|---|---|
 | 2026-10-02 | `requested` | ScottJeezey (chair, task-force discussion) | the chair's question on a DID as the starting point of the admission proof: DIDs carry several identifiers and key rotation; the proofs are rooted in a holder secret |
 | 2026-10-02 | `specified` | mitchuski | statement, witness, public inputs and five clauses bound to the lab gadget set (membership, non-revocation, a pre-rotation opening, a rotation tag, transcript binding); three options including the no-proof DID-method route for public identifiers; the enclosing records' spent-tag clause stated as an issuance line; the cross-rotation nullifier question left open as WG-17; privacy read across the DID log, the enrolment root and the presentations together: the registry-operator claim scoped to enrolments not bound to a public DID, batching and the next-epoch nullifier default stated as issuance lines, cross-community binding named |
+| 2026-11-19 | `constructed` | mitchuski | runtimes/circom-gadget/circuits/rotation.circom + test-rotation.mjs, run 2026-11-19: R1–R13 13/13; 11,987 constraints (--O2), prove ~1.3 s, verify ~21 ms, 320 B compressed; lab-only setup |
 
 Revisions within a state:
 
 | date | by | note |
 |---|---|---|
 | 2026-10-27 | mitchuski | formal model built (Lean, composed from records 001, 006 and 002): the relation as a definition, its soundness, the counter-deployment showing H-pre necessary, and does-not-establish 3 and 4 classified (formal review run 2); no state change |
+| 2026-11-19 | mitchuski | cryptographic review (zkp-spec #25 (DenisPopov15, 2026-11-18)): the relation reworked. The rotation is authorised by the pre-committed next secret and opens the retiring leaf by the image of its secret, so a lost secret is replaced and a stolen one cannot rotate; the replacement carries the retiring leaf's revocation handle, shown equal in the proof (record 009), so a rotation no longer escapes revocation; the spent-tag set is committed sorted, as record 006 requires of rl_root. Leaf form, witness, clauses 4–6, rejection codes, issuance and the formal model changed; the model was rebuilt and re-audited. State unchanged (specified). |
+| 2026-11-19 | mitchuski | the Groth16 route built and measured (rotation.circom: 11,987 constraints, R1–R13 13/13). Building it corrected clause 3: the pre-rotation digest commits to the next secret's image, N = Hpre(H(s′)), not to the whole next leaf, which could not be minted without its own successor; the replacement leaf is minted at the rotation. Clauses carry the runtime; rejection codes follow the fixtures; the formal model follows (next_secret_fixed replaces replacement_fixed). |
 
 #### Formal verification
 
@@ -2914,28 +2987,39 @@ Revisions within a state:
 - system: Lean 4.33.1, core library only (no Mathlib); axiom footprint within propext, Classical.choice and Quot.sound — no sorry, no added axiom
 - location: formal/Formal/Composed/R025.lean in the evidence repository, at the evidence revision Appendix B pins
 - reproduce: sh formal/scripts/check-axioms.sh — builds, prints each theorem's axiom footprint, fails on sorry or a non-standard axiom
-- statement: Formal.R025.Rotates — the leaf L = com s N r is under root_C, its handle lies between sorted revocation neighbours, its pre-rotation digest N is the hash of the replacement presented, and the tag is the PRF of s; all four read from the one opening
-- scope: clauses 1–4 and issuance lines 2, 3 and 6 as a model; clause 5 (transcript) is record 003's; that the holder can open L′, batch unlinkability, timing and the PRF's pseudorandomness are outside the model
+- statement: Formal.R025.Rotates — the leaf L = com k N a r is under root_C, its handle a lies between sorted revocation neighbours, its pre-rotation digest N is the hash of a next secret's image, the replacement opens as com (hs s′) N′ a r′ under that secret and the same handle, and the tag is the PRF of the image k; the current secret does not appear
+- scope: clauses 1–6 and issuance lines 4, 5 and 8 as a model; clause 7 (transcript) is record 003's. That the rotation does not need the current secret is read off the relation, which names only its image (a review witness rotates a leaf whose image has no preimage). That a party without s′ cannot rotate is knowledge soundness of the proof system; the sortedness of the spent-tag set, batch unlinkability, timing and the PRF's pseudorandomness are outside the model
 
 | theorem | proves |
 |---|---|
-| `Formal.R025.soundness` | clauses 1–4: the presenter's leaf is enrolled, its handle is not revoked at the epoch, its pre-rotation digest names the replacement presented, and the tag is its secret's (records 001, 006 and 002's shape) |
-| `Formal.R025.replacement_fixed` | clause 3: one enrolment leaf admits one replacement and one tag — a party holding a stolen s moves the enrolment only to the leaf the member chose |
-| `Formal.R025.colliding_predigest_two_replacements` | H-pre is necessary: with a colliding pre-rotation hash one digest names two replacements |
-| `Formal.R025.second_rotation_refused` | clause 4: a second rotation from the same secret repeats the tag and is refused by the spent-tag set, whichever leaf it opens |
+| `Formal.R025.soundness` | clauses 1–6: the retiring leaf is enrolled, its handle is not revoked at the epoch, its pre-rotation digest names a next secret's image, the presenter opens the replacement under that secret and the same handle, and the tag is the retiring leaf's (records 001, 006 and 002's shape) |
+| `Formal.R025.next_secret_fixed` | clause 3: one enrolment leaf admits one next-secret image and one tag |
+| `Formal.R025.colliding_predigest_two_replacements` | H-pre is necessary: with a colliding pre-rotation hash one digest names two next secrets |
+| `Formal.R025.handle_carried_forward` | clauses 4 and 5: every opening of the admitted replacement carries the retiring leaf's handle and the next secret's image |
+| `Formal.R025.revocation_survives_rotation` | clause 5: a handle revoked after the rotation fails the neighbour clause for every opening of the replacement — rotating does not escape revocation |
+| `Formal.R025.fresh_handle_escapes` | clause 5 is necessary: under the relation as first specified, a replacement with a fresh handle is unrevoked after the old handle is revoked |
+| `Formal.R025.second_rotation_refused` | clause 6: a second rotation of the same leaf repeats the tag and is refused by the spent-tag set |
 | `Formal.R025.rotated_leaf_still_member` | does-not-establish 3: the membership tree is append-only, so membership alone still accepts a rotated-away leaf |
-| `Formal.R025.rotated_secret_retired` | issuance 2: the tag-absence clause carried by records 010, 023 and 024 is what retires the old secret |
-| `Formal.R025.tag_not_nullifier` | issuance 3: with the rotation context outside every presentation context, a rotation tag never equals a presentation nullifier |
+| `Formal.R025.rotated_secret_retired` | issuance 4: the tag-absence clause carried by records 010, 023 and 024 is what retires the old secret |
+| `Formal.R025.tag_not_nullifier` | issuance 5: with the rotation context outside every presentation context, a rotation tag never equals a presentation nullifier |
 | `Formal.R025.straddling_epoch_two_nullifiers` | does-not-establish 4: a context epoch spanning the rotation sees two nullifiers |
-| `Formal.R025.next_epoch_one_nullifier` | issuance 6: the next-epoch default leaves one live secret, and so one nullifier, per context epoch |
+| `Formal.R025.next_epoch_one_nullifier` | issuance 8: the next-epoch default leaves one live secret, and so one nullifier, per context epoch |
 
 | hypothesis | carries |
 |---|---|
 | H-leaf, H-node, H-domain (record 001) | clause 1: the tree's hashes are collision-free, leaves and nodes under separate domains |
-| H-sorted (record 006) | clause 2: rl_root commits a strictly sorted handle list |
-| H-com | clause 3: the leaf commitment is binding over (s, N, r) |
+| H-sorted (record 006) | clauses 2 and 5: rl_root commits a strictly sorted handle list |
+| H-com | clauses 3–5: the leaf commitment is binding over (image, N, handle, r) |
 | H-pre | clause 3: the pre-rotation hash is collision-free |
-| H-prf | issuance 3: the PRF is collision-free over (secret, context) |
+| H-prf | issuance 5: the PRF is collision-free over (key, context) |
+
+#### Reviews
+
+Recorded reviewer sign-off on this record's clauses; a review is not a state advance and confers no evidence state.
+
+| date | reviewer | scope | verdict | evidence |
+|---|---|---|---|---|
+| 2026-11-18 | Denys Popov (DenisPopov15) | cryptographic reading of the construction: recovery from a lost secret, revocation across a rotation, the spent-tag set | `refined` | zkp-spec #25, record 025 points 1–3: the relation of 2026-10-02 did not meet its own stated need (a lost secret could not rotate) and let a member rotate out of reach of revocation; both shown, both suggestions taken, and the relation above is the reworked one — open for the reviewer's second reading |
 <!-- generated-section:constructions:end -->
 
 <!-- generated-section:stacks:start -->
@@ -3172,7 +3256,7 @@ This section is informative.
 
 1. **Soundness is a property of a construction, not of this document.** A construction record states clauses; only a runtime realises them, and only an independent reproduction shows that the realisation behaves. A record at state `specified` has not been shown sound by anyone. Readers MUST NOT read a record's presence in this specification as a claim that its construction is secure.
 2. **Reproduction is not audit.** A registry entry records a reproduction claim and its supporting artifacts. The evidence-repository build-report acceptance checker compares submitted metadata with a manifest; it does not itself execute the suites, verify a proof or authenticate the independence of the submitter. Evaluate those forms of evidence separately. It does not establish that the circuit is free of under-constrained signals, unchecked booleanity or interface drift between an audited commit and a shipped one. An audit claim in a proving-system entry that names no reviewed commit and file set is printed as "claimed; not located".
-3. **Trusted setup.** Constructions on pairing-based proving systems depend on a setup whose entropy must be destroyed. The reference constructions' setup is a fixed-entropy laboratory setup, unusable in production and marked as such; production deployment requires a ceremony, and the registry treats setup-chain digests as advisory because a real ceremony is machine-local by design.
+3. **Trusted setup.** Constructions on pairing-based proving systems depend on a setup whose entropy must be destroyed. The reference constructions' setup is a fixed-entropy laboratory setup, unusable in production and marked as such; whoever holds a setup's randomness can forge every proof of that circuit, so a laboratory setup conveys soundness to no one outside the laboratory; production deployment requires a multi-party ceremony with a published transcript, or a transparent proving system, and the registry treats setup-chain digests as advisory because a real ceremony is machine-local by design.
 4. **Composition.** Two constructions that are individually sound may leak jointly. Composed construction records are required to declare their own disclosure set and negative space rather than inherit the union of their parts, and are bound to one presentation transcript. Implementations MUST NOT present the components of a composed construction as separate proofs and claim the composed record's properties.
 5. **Common control.** Under the Credentials Core Specification's three correlation scopes, two `pairwise` identifiers of one party differ by construction. A construction that reads one party out of two credentials must prove common control of both identifiers (construction 007) or rely on the party having declared one `directed` identifier; a presenter cannot prove a counterparty's common control without the counterparty's witness or attestation. The identifiers concerned may appear as credential subject or as credential issuer — the VRC-issuer case is statement 3 of construction 010. A chain predicate is a different relation: that a child credential's `issuer` equals its parent's `credentialSubject.id` involves no holder secret and is hidden-value equality across credentials signed by different parties (construction 009, inside constructions 020 and 021), not common control; reading the two as one primitive leaves the chain predicates unspecified while appearing covered (cred-spec #9). Records that need either say so; implementations that assume either silently are unsound.
 6. **Self-vouching.** A community-anchored proof without a distinctness clause (S6) accepts a member vouching for themselves under two identifiers. The clause is added in construction 010 and is required of any implementation of that record.
@@ -3211,7 +3295,7 @@ This section is informative. Items 1–6 are written by the editors; the numbere
 - **Construction 008** — against verifiers-colluding: verifiers colluding across contexts can link any repeated visible C in route 1. Route 2 cross-context unlinkability is a design objective, not established by this record; it depends on PRF key secrecy, domain separation and the absence of other stable presentation identifiers
 - **Construction 008** — against issuer-verifier-colluding: the issuer that placed C and a verifier together can link C to the exchange (the issuer knows u) — stated, not hidden: issuer–verifier collusion is outside this record's protection
 - **Construction 009** — against verifier, verifiers-colluding: the compared value is not disclosed and no value derived from it is emitted; two verifiers comparing proofs learn only what the enclosing records disclosed to each
-- **Construction 009** — against issuer-verifier-colluding: the issuer of either credential learns nothing about the other credential from the proof — the equality is proven over openings the holder supplies, never over a value the issuer can recognise in a public signal
+- **Construction 009** — against issuer-verifier-colluding: the proof emits no value by which the issuer of either credential can recognise it: the equality is proven over openings the holder supplies, never over a public signal. What an issuer already holds is outside the claim — the parent's issuer wrote the parent's `credentialSubject.id`, which is the compared value, so where the enclosing record's disclosures let that issuer recognise its credential it learns that the other credential names the same identifier
 - **Construction 010** — against verifier, verifiers-colluding: P1/P2 — no pairwise-scope identifier of the edge, no counterparty identifier
 - **Construction 010** — against verifiers-colluding: P4 — proposed cross-context proof unlinkability against colluding verifiers, conditional on the selected proof system and absence of correlatable disclosures; context nullifiers intentionally link reuse and registry/context metadata can also correlate presentations
 - **Construction 010** — against registry-operator, issuer-verifier-colluding: C3 — currency check does not identify the presenter; holds only if rl_root/root_C are fetched without a per-holder query
@@ -3224,14 +3308,14 @@ This section is informative. Items 1–6 are written by the editors; the numbere
 - **Construction 021** — against verifier, verifiers-colluding: no ancestor identifier is disclosed — the verifier learns the leaf's authority, not who equipped the presenter or through whom; against colluding verifiers the chain contributes no cross-presentation handle beyond what the presenter discloses of itself
 - **Construction 021** — against registry-operator: the status check on links that carry `credentialStatus` does not identify the presenter or the chain when rl_root is fetched without a per-chain query; the root-status timing leak of item 14 is stated, not hidden
 - **Construction 021** — against issuer-verifier-colluding: an issuer of one link learns from the proof nothing about the links below it — attenuations it never saw stay unseen, as the credential specification intends ('a governing party withdraws derivations it never saw')
-- **Construction 022** — against verifier: a verifier shown the reference but not the referenced credential learns nothing about that credential's content that it could not have guessed without the reference — the salt removes the enumeration oracle
+- **Construction 022** — against verifier: a verifier shown the reference but neither the referenced credential nor its salt learns nothing about that credential's content that it could not have guessed without the reference — the salt removes the enumeration oracle for as long as the verifier does not hold it
 - **Construction 022** — against verifiers-colluding: route 2 only: two verifiers comparing what they were shown cannot link two presentations of the referencing credential through the reference, because neither saw a reference value
 - **Construction 023** — against verifier: the issuing community learns nothing about which members vouched beyond the count reaching k — no voucher identifier, VRC-side or VMC-side, no path position, no leaf
 - **Construction 023** — against verifiers-colluding: two join requests by one applicant to two communities, or a repeated request to one, cannot be linked through this proof beyond the disclosed admission identifier — the proof emits no identifier-derived value; the admission identifier is disclosed by the applicant's own act
 - **Construction 023** — against registry-operator, issuer-verifier-colluding: fetching root_C and rl_root does not identify the applicant or the vouchers — holds only if roots are fetched without a per-applicant query
-- **Construction 024** — against verifier, issuer-verifier-colluding: the community learns which of its eligible vetters attested no better than chance over the vetter set, less whatever the disclosed per-statement facts narrow that set
+- **Construction 024** — against verifier, issuer-verifier-colluding: the community learns which of its eligible vetters attested no better than chance over the vetters that do not collude with it, less whatever the disclosed per-statement facts narrow that set. A vetter colluding with the community recomputes its own tag for this applicant from its secret and is confirmed or excluded, so the anonymity set is the non-colluding eligible vetters — and it is empty where all but the k attesters collude
 - **Construction 024** — against verifier: one vetter's attestations for two applicants cannot be linked through their tags or serials
-- **Construction 025** — against registry-operator, verifier: for an enrolment not bound to a public DID, the community operating the roots learns which secret rotated only as its tag t — not which leaf under root_C, and not a link from L′ to L beyond the batch the rotation was admitted in
+- **Construction 025** — against registry-operator, verifier: for an enrolment not bound to a public DID, the community operating the roots learns which leaf rotated only as its tag t — not which leaf under root_C, not the handle the two leaves share, and not a link from L′ to L beyond the batch the rotation was admitted in
 - **Construction 025** — against verifiers-colluding: verifiers comparing per-context nullifiers from before and after a rotation learn no link between them: t is scoped to the rotation context, which no presentation context shares
 
 ### Negative space as recorded, per construction
@@ -3255,8 +3339,8 @@ This section is informative. Items 1–6 are written by the editors; the numbere
 - **Construction 021** does not establish: that the presenter is someone the scope will deal with — a valid chain establishes narrowing by parties entitled to narrow, not that the leaf subject independently qualifies; that is the governing party's policy call (§Attenuation) and clause 7 is present only where the policy asks for it; delegation: the presenter acts as itself, and nothing here appoints it to act in anyone's name (§Authority is not delegation — that is record 020); that the governing party's own permission to govern S is current beyond 'accredited under root_G at the stated state'; …
 - **Construction 022** does not establish: that the referenced credential is currently valid, unrevoked or accepted (record 006; the enclosing record's own clauses); that the party issuing the referencing credential was entitled to reference that credential — an acknowledgement by a non-member, an acceptance by the wrong delegate, a witness with no standing: governance and the enclosing record decide that, not the opening; unlinkability of presentations that show the same salted digest (route 1): hiding the plaintext behind a salt stops enumeration and nothing else; a stable visible reference still links every presentation of the referencing credential, exactly as record 008 says of a visible commitment C; …
 - **Construction 023** does not establish: that any voucher consented to be counted toward this admission — a relationship credential is evidence of a relationship, and whether it is a vouch is the community's reading under its rules (general #31: 'vouching is social, not technical'); that the applicant is not already a member — a member can hold k VRCs; if the policy needs 'not a member', the statement gains a non-membership clause against root_C (record 006's gadget applied to the membership set), which this record does not include; that no voucher is the applicant — the statement has no clause excluding it, and an applicant who is already a member can vouch for itself through its own grant, so one of the k counted members is the applicant (the formal model's counter-deployment `self_vouch_counted`); the refusal is the community's admission check, which must refuse an applicant who is already a member (record 024 carries the key-level exclusion as its clause 7); …
-- **Construction 024** does not establish: that the k attesters are k distinct people — distinct tags mean distinct vetter secrets; a vetter who hands its secret to another lets one person attest under two tags; that a transferable-token budget limits each vetter: vetters can pool tokens. A per-vetter quota requires a profile that binds authorized spends to a stable enrolled secret and bounds slots, or another construction demonstrating equivalent enforcement. Neither profile bounds distinct people or prevents sharing a secret (DG-024-4); that no attester is the applicant, in the Groth16 route — clause 7 is not built there; it holds only while applicants are outside the vetter set; …
-- **Construction 025** does not establish: that the presenter is the member who enrolled: anyone holding s can rotate. Pre-rotation limits a thief to moving the enrolment to the replacement the member committed, which the thief cannot open; it does not stop the thief presenting under s until the rotation lands; that the holder can open L′ — the replacement is accepted as committed; a member who loses s′ as well has no route but re-enrolment; that the old secret stops presenting: that holds only where the enclosing presentation records prove the leaf's rotation tag absent from the community's spent-tag set (issuance); …
+- **Construction 024** does not establish: that the k attesters are k distinct people — distinct tags mean distinct vetter secrets; a vetter who hands its secret to another lets one person attest under two tags; that a transferable-token budget limits each vetter: vetters can pool tokens. A per-vetter quota requires a profile that binds authorized spends to a stable enrolled secret and bounds slots, or another construction demonstrating equivalent enforcement. Neither profile bounds distinct people or prevents sharing a secret (DG-024-4); that no attester is the applicant, in the Groth16 route — clause 7 is not built there and no fixture rejects a self-attestation: an applicant who is also an eligible vetter can supply one of its own k attestations. Until the clause is built the route's stated policy is that applicants are outside the eligible-vetter set (issuance); where a community cannot hold that policy it reads the criterion as k − 1 attestations from vetters other than the applicant. In any route the clause compares secrets, not people: a vetter applying under a fresh per-application secret is not distinguished from another applicant; …
+- **Construction 025** does not establish: that the presenter is the member who enrolled: the rotation authority is s′ together with the opening of L. A party holding a stolen s can present until the rotation lands but cannot rotate; a party holding the stolen rotation material takes the enrolment over, as the holder of a pre-rotated key takes over an identifier. The next secret is kept as a key event log's next keys are kept — offline, and apart from s (issuance); recovery from losing both: a member who loses s and the rotation material — s′, or the opening of L — has no route but re-enrolment; that the old secret stops presenting: that holds only where the enclosing presentation records prove the leaf's rotation tag absent from the community's spent-tag set (issuance); …
 <!-- generated-section:privacy:end -->
 
 ## Governance Considerations

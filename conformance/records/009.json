@@ -17,11 +17,11 @@
   ],
   "publicInputs": [
     "whatever the enclosing record discloses of the two credentials — this record adds no public input of its own",
-    "transcriptDigest — the presentation transcript this proof is bound to"
+    "transcriptDigest — the presentation transcript this proof is bound to; the binding is record 003's clause, which the enclosing record carries (does-not-establish)"
   ],
   "relation": [
     {
-      "clause": "field_a (opened from credential A's authenticated content) equals field_b (opened from credential B's authenticated content): field_a − field_b = 0 — a differing pair is unsatisfiable, and neither value is a public signal",
+      "clause": "field_a (opened from credential A's authenticated content) equals field_b (opened from credential B's authenticated content), each taken whole in the profile's canonical form and injective encoding (issuance): field_a − field_b = 0 on every element of the encoding — a differing pair is unsatisfiable, and neither value is a public signal",
       "gadget": "hidden-equality"
     }
   ],
@@ -34,7 +34,9 @@
     "common control: equal identifiers in two credentials say that the same DID appears in both, not that the presenter controls it — key control is record 004, and two different identifiers under one hand is record 007",
     "that either credential is authentic, valid or unrevoked on its own — the enclosing record's signature-verify (or set-membership) and non-revocation clauses establish that; this clause compares two witnesses those clauses have already bound",
     "that the two credentials were meant to be presented together — intentional correlation is the holder's declaration (record 012), and a shared subject widens no identifier's declared scope",
-    "anything about the value's meaning: an equal `issuer` and `credentialSubject.id` across two hops establishes the link the chain rule requires (cred-spec §Delegation Edges, §Attenuation) and nothing about who that party is"
+    "anything about the value's meaning: an equal `issuer` and `credentialSubject.id` across two hops establishes the link the chain rule requires (cred-spec §Delegation Edges, §Attenuation) and nothing about who that party is",
+    "that the proof is bound to its transcript by this clause alone: transcriptDigest is a public input the hidden-equality clause does not read, and in Groth16 a public input that appears in no constraint can be replaced after proving. The binding is record 003's clause — the circuit constrains the scalar — carried by the enclosing record, or composed with this one where it is proven on its own; a circuit for this record that leaves the input unconstrained does not conform",
+    "authenticity of a credential whose `issuer` is hidden, under the as-signed option: hiding the issuer hides the key its signature verifies under, so the enclosing record must verify the signature under a hidden key and show that the key is that identifier's — and no DID is resolved inside a circuit (Integration). Three shapes meet this: a self-certifying identifier (`did:key`, `did:peer` numalgo 0) whose key is decoded from the hidden identifier inside the proof; a committed identifier-to-key binding the proof opens (a registry leaf under a public root, or a key commitment the parent credential carries for its subject); or an issuer-hiding signature scheme. None is selected: it is an open requirement of records 020 and 021"
   ],
   "adversary": [
     {
@@ -45,7 +47,7 @@
       ]
     },
     {
-      "claim": "the issuer of either credential learns nothing about the other credential from the proof — the equality is proven over openings the holder supplies, never over a value the issuer can recognise in a public signal",
+      "claim": "the proof emits no value by which the issuer of either credential can recognise it: the equality is proven over openings the holder supplies, never over a public signal. What an issuer already holds is outside the claim — the parent's issuer wrote the parent's `credentialSubject.id`, which is the compared value, so where the enclosing record's disclosures let that issuer recognise its credential it learns that the other credential names the same identifier",
       "against": [
         "issuer-verifier-colluding"
       ]
@@ -72,7 +74,8 @@
     ],
     "rejectionCodes": [
       "hidden-values-differ (unsat: the two openings are not equal)",
-      "field-not-openable (verify-fail: a compared field carries no commitment the proof can open — an issuance failure, X3 applied to the compared fields)"
+      "field-not-openable (verify-fail: a compared field carries no commitment the proof can open — an issuance failure, X3 applied to the compared fields)",
+      "encoding-not-injective (lint: the profile compares a truncated or length-free packing of the identifier)"
     ]
   },
   "options": [
@@ -84,7 +87,7 @@
     },
     {
       "construction": "as-signed credentials (ECDSA/Ed25519 rails): equality of two signed fields inside a Longfellow-class or ProveKit circuit — the signature checks are the cost, the equality is free",
-      "cost": "unmeasured; dominated by two signature verifications",
+      "cost": "unmeasured; two in-circuit signature verifications at the least. Where either `issuer` is hidden the verification is under a hidden key, with a proof that the key is the hidden identifier's — the larger cost, and not specified (does-not-establish)",
       "measured": false,
       "source": "board/stacks/siros-longfellow.json · board/stacks/provekit.json"
     },
@@ -97,7 +100,9 @@
   ],
   "issuance": [
     "each field that may be compared must be, or carry, a ZK-openable commitment inside the authenticated credential content: for the chain predicates that is `issuer` and `credentialSubject.id` on every hop; for the shared-subject rule it is `credentialSubject.id` on the VMC and the VAC — the X3 requirement applied to the compared fields rather than to signatures (cred-spec #17)",
-    "a credential whose compared field is a `pairwise` identifier that differs from the identifier in the other credential cannot satisfy this record by construction; the holder either declared one `directed` identifier for both, or the enclosing record composes record 007 for that pair instead"
+    "a credential whose compared field is a `pairwise` identifier that differs from the identifier in the other credential cannot satisfy this record by construction; the holder either declared one `directed` identifier for both, or the enclosing record composes record 007 for that pair instead",
+    "encoding: a DID is longer than one field element (about 31 bytes on BN254 or BLS12-381), so the compared value is never a truncation. The profile fixes one of two encodings — an injective packing (the UTF-8 bytes in 31-byte limbs with the byte length as a further element, compared element by element), or a domain-separated collision-resistant hash of the whole string to one field element, where equality then rests on that hash. A truncated or length-free packing accepts unequal identifiers, which is a soundness failure",
+    "normalisation: both fields are reduced to one canonical form before encoding — an `issuer` given as an object is read as its `id`; a DID is compared without fragment, query or path; no case folding beyond what the DID method defines — or one identifier written two ways fails to match. The canonical form is the credential specification's to state, as the comparison it already makes in the clear; the proof needs it to be one function of the credential bytes, the same in both credentials"
   ],
   "provenance": {
     "spec": [
@@ -149,6 +154,20 @@
       "date": "2026-09-23",
       "by": "mitchuski",
       "note": "formal model built (Lean, gadget library): the clause as a definition, its soundness, the counter-deployments that show which hypotheses are necessary, and the negative space classified; no state change"
+    },
+    {
+      "date": "2026-11-19",
+      "by": "mitchuski",
+      "note": "cryptographic review (zkp-spec #25 (DenisPopov15, 2026-11-18)): the clause names the canonical form and injective encoding it compares over, with issuance lines for both; verification of a credential whose issuer is hidden recorded as an open requirement of records 020 and 021, and the as-signed option's cost line corrected; the claim against a colluding issuer narrowed to what the proof emits; transcriptDigest stated as bound by record 003's clause. State unchanged."
+    }
+  ],
+  "reviews": [
+    {
+      "by": "Denys Popov (DenisPopov15)",
+      "date": "2026-11-18",
+      "scope": "cryptographic reading of the construction: encoding and normalisation of the compared value, signature verification under a hidden issuer, the colluding-issuer claim",
+      "verdict": "refined",
+      "evidence": "zkp-spec #25, record 009 points 1–3 and record 007 point 2 as it applies here: all taken"
     }
   ]
 }

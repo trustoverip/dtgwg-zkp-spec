@@ -78,7 +78,8 @@
     "chain-length hiding without a validated fixed-shape or padded profile",
     "that the principal is the party the verifier intends to deal with — §Delegation Chains check 5 is the verifier's own check, outside the proof; the proof shows the root's issuer is a leaf of root_C, not that it is the intended party",
     "the delegate's demonstration of key control at the moment of the request (§Invocation Binding) beyond what clause 4 binds into this transcript — how the demonstration is requested and carried is the trust task's",
-    "chain length: without a validated fixed-shape or padded profile the number of hops is disclosed by the proof's shape (cred-spec Privacy Considerations item 13)"
+    "chain length: without a validated fixed-shape or padded profile the number of hops is disclosed by the proof's shape (cred-spec Privacy Considerations item 13)",
+    "how a hop's signature is verified while its `issuer` stays hidden: the signature-verify clause needs the hidden issuer's key and a proof that the key is that identifier's, with no DID resolved inside the circuit — a self-certifying identifier decoded in the proof, a committed identifier-to-key binding the proof opens, or an issuer-hiding signature scheme. None is selected; this is an open requirement of this record (record 009, does-not-establish)"
   ],
   "adversary": [
     {
@@ -156,6 +157,11 @@
       "date": "2026-09-23",
       "by": "mitchuski",
       "note": "formal model built (Lean, composed from the gadget library); no state change"
+    },
+    {
+      "date": "2026-11-19",
+      "by": "mitchuski",
+      "note": "cryptographic review of record 009 (zkp-spec #25 (DenisPopov15, 2026-11-18)) read across: verifying a hop's signature under a hidden issuer named as an open requirement. No clause changes. State unchanged."
     }
   ],
   "history": [

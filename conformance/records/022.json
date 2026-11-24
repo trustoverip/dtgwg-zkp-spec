@@ -13,17 +13,17 @@
   "statement": "A verifier learns that a digest-valued reference carried by a presented credential names exactly the credential the enclosing record's clauses read — the community-issued grant a member-issued VMC acknowledges, the appointment a VDC accepts, the credential a VSC's statement is about, the parent a VDC or a VAC derives from — while the reference value is not enumerable by a party not shown the referenced credential and, where the enclosing record hides the reference, is not shown at all.",
   "witness": [
     "the referenced credential's canonical bytes — its JSON representation without the top-level `proof`, canonicalized per JCS (RFC 8785), as §Digest Encoding prescribes — or, where the enclosing record needs only the digest, the digest itself",
-    "the blinding value u under which the digest was taken (a 32-byte random salt), held by whoever holds the referenced credential",
+    "the blinding value u — under the adopted placement, the referenced credential's own top-level `salt` member (32 random bytes, inside the canonical bytes above); under option 2, a 32-byte salt held beside the reference by its two parties",
     "the referencing credential that carries the reference (its bytes stay with the holder; only what the enclosing record discloses is shown)"
   ],
   "publicInputs": [
     "the reference value as the referencing credential carries it (route 1: a salted digest, visible; route 2: nothing — the reference is opened inside the proof and the enclosing record's public inputs stand in for it)",
-    "transcriptDigest — the presentation transcript this proof is bound to",
+    "transcriptDigest — the presentation transcript this proof is bound to; the binding is record 003's clause, which the enclosing record carries (does-not-establish)",
     "the hash algorithm the reference declares in its Multihash header (`sha2-256` unless a governing VTC or VTN permits another), so verifier and circuit agree on the function being opened"
   ],
   "relation": [
     {
-      "clause": "the reference opens to (canonical bytes of the referenced credential, u) under the declared digest function: reference = Multibase(Multihash(H(bytes ∥ u))) — a different credential or a different salt is unsatisfiable; and when the enclosing record reads the referenced credential (the grant's fields in record 010, the parent's fields in records 020 and 021, the object in a VSC-based record) the bytes opened here are the bytes those clauses read — one credential, not one for the digest and another for the predicate",
+      "clause": "the reference opens to the referenced credential's canonical bytes under the declared digest function, in the one placement the profile names. Adopted placement (option 1, cred-spec #38): reference = Multibase(Multihash(H(JCS(credential without `proof`)))), where the credential carries the top-level `salt` member u — the salt is inside the hashed bytes, where JCS orders it, and nothing is appended. Option 2 is a different function, H(bytes ∥ u) over a credential that carries no salt; vectors and circuits are built for exactly one of the two. A different credential or a different salt is unsatisfiable; and when the enclosing record reads the referenced credential (the grant's fields in record 010, the parent's fields in records 020 and 021, the object in a VSC-based record) the bytes opened here are the bytes those clauses read — one credential, not one for the digest and another for the predicate",
       "gadget": "commitment-open"
     }
   ],
@@ -37,11 +37,14 @@
     "that the party issuing the referencing credential was entitled to reference that credential — an acknowledgement by a non-member, an acceptance by the wrong delegate, a witness with no standing: governance and the enclosing record decide that, not the opening",
     "unlinkability of presentations that show the same salted digest (route 1): hiding the plaintext behind a salt stops enumeration and nothing else; a stable visible reference still links every presentation of the referencing credential, exactly as record 008 says of a visible commitment C",
     "which digest-valued members carry a salt and where the salt lives — that disposition is the credential specification's (cred-spec #38); this record states what the proof needs of whichever placement is chosen",
-    "that a chain reference (a VDC's or VAC's `parent`) needs blinding for safety: the credential specification re-checks every link against the parent actually presented, so a chain reference is unforgeable within a presented chain without a salt; blinding it serves uniformity and enumeration resistance, not chain soundness"
+    "that a chain reference (a VDC's or VAC's `parent`) needs blinding for safety: the credential specification re-checks every link against the parent actually presented, so a chain reference is unforgeable within a presented chain without a salt; blinding it serves uniformity and enumeration resistance, not chain soundness",
+    "that the proof is bound to its transcript by this clause alone: transcriptDigest is a public input the commitment-open clause does not read, and in Groth16 a public input that appears in no constraint can be replaced after proving. The binding is record 003's clause — the circuit constrains the scalar — carried by the enclosing record, or composed with this one where it is proven on its own; a circuit for this record that leaves the input unconstrained does not conform",
+    "enumeration resistance against a party shown the salt: the salt protects only while it is withheld. A verifier shown part of the referenced credential under a selective-disclosure suite, together with its salt, and holding a digest reference to that credential, can try the undisclosed low-entropy members against the digest — the enumeration this record exists to stop (issuance)",
+    "that the members the enclosing clauses read are the members the digest covers, without a structural reading of the bytes: the one-credential rule requires locating members inside the JCS bytes in the circuit, and JSON parsing in a circuit is a known source of field-confusion faults — a key matched inside a string value, an escape sequence, a duplicate member, a member at another depth. A circuit establishes each member's position structurally (a top-level key, outside any string, occurring once), never by substring match. A profile may instead read fields from a SNARK-native commitment the issuer places in the credential, which makes the correspondence of bytes to fields the issuer's assertion and a trust assumption. Neither is built or measured"
   ],
   "adversary": [
     {
-      "claim": "a verifier shown the reference but not the referenced credential learns nothing about that credential's content that it could not have guessed without the reference — the salt removes the enumeration oracle",
+      "claim": "a verifier shown the reference but neither the referenced credential nor its salt learns nothing about that credential's content that it could not have guessed without the reference — the salt removes the enumeration oracle for as long as the verifier does not hold it",
       "against": [
         "verifier"
       ]
@@ -79,7 +82,7 @@
   "options": [
     {
       "construction": "salt in the referenced credential's hashed block (an ACDC-style `u` member: 32 random bytes the issuer places in the credential, so every digest of that credential is unpredictable without the credential itself). Route 1: no change to the digest computation of §Digest Encoding beyond the bytes it hashes; a verifier shown the referenced credential recomputes as today; enumeration is defeated for every reference to that credential at once, and the salt travels with the credential that owns it",
-      "cost": "zero outside a proof; inside a proof, a SHA-256 preimage over the canonical bytes — on the order of 25–30k R1CS constraints per 64-byte block in circom's sha256 (conjecture for this record, not measured); a 1.5 KB credential is roughly 24 blocks",
+      "cost": "zero outside a proof; inside a proof, a SHA-256 preimage over the canonical bytes — on the order of 25–30k R1CS constraints per 64-byte block in circom's sha256, so roughly 700k for a 1.5 KB credential of about 24 blocks (conjecture for this record, not measured) — before any member is located in those bytes, which is the larger risk (does-not-establish)",
       "measured": false,
       "source": "cred-spec #38 (the ACDC `u` salty-nonce placement named in the issue); KERI/ACDC specification, blinding of SAIDs by a `u` field; circomlib sha256 constraint counts as commonly reported"
     },
@@ -101,7 +104,8 @@
     "the hashed representation of a referenced credential must contain a salt the proof can treat as a witness; the proof-side preference is the first option above (a salt member inside the referenced credential), because it blinds every reference at once, moves with the credential, and changes neither the referencing credential nor the encoding — the disposition is #38's — adopted in that shape on #38 (stormer78 2026-09-25; bmiller59 +1): a REQUIRED top-level `salt` on every DTG credential, exactly 32 bytes from a CSPRNG, fresh per credential, base-58-btc multibase, covered by the digest and the proof; mandatory-disclosure under selective-disclosure suites; no change to §Digest Encoding; defined from the `v2` context at the Implementers Draft and not emitted under `v1`",
     "content-binding references (acknowledgement, acceptance, statement object) must stay bound to the exact content they name: a salted digest preserves that binding, a re-randomizable commitment would not without a further opening",
     "chain references (a VDC's and a VAC's `parent`) are re-checked by the verifier against the parent presented, so a profile may leave them unsalted where the whole chain is disclosed, and must salt them where a chain is proven without disclosure (records 020 and 021)",
-    "the encoding of the reference is unchanged: Multibase base-58-btc over a Multihash of the salted digest, compared as decoded bytes, as §Digest Encoding requires"
+    "the encoding of the reference is unchanged: Multibase base-58-btc over a Multihash of the salted digest, compared as decoded bytes, as §Digest Encoding requires",
+    "the `salt` should not be a mandatory-disclosure member under a selective-disclosure suite — a finding of the review of 2026-11-18 against the placement as adopted, for the credential specification to weigh before the context that defines `salt` is published (cred-spec PR #87): (a) a verifier shown part of the referenced credential and its salt, and holding a digest reference to it, can enumerate the undisclosed members against the digest; (b) a unique 32-byte salt shown in every derived presentation is a perfect correlator, and removes the unlinkability a BBS derivation otherwise has; (c) a verifier of a partial disclosure cannot recompute the digest in any case, so a disclosed salt serves no check there. What the proof side needs: the salt is disclosed only where the whole credential is disclosed, and the verifier then recomputes the reference as §Digest Encoding prescribes; under partial disclosure the salt stays with the holder and a reference to the credential is opened inside the proof (route 2). This withdraws the reading given on #38 on 2026-09-30, that mandatory disclosure is the witness-side requirement: the holder needs the salt as a witness, and the verifier does not need to see it"
   ],
   "provenance": {
     "spec": [
@@ -177,6 +181,20 @@
       "date": "2026-09-30",
       "by": "mitchuski",
       "note": "cred-spec #38 ruled by the credential maintainer (30 Sept): option 1 lands in the `v2` context. Until `v2`, a `v1` credential's digest references are still enumerable, which is the horizon an implementer should read. Provenance only; state unchanged."
+    },
+    {
+      "date": "2026-11-19",
+      "by": "mitchuski",
+      "note": "cryptographic review (zkp-spec #25 (DenisPopov15, 2026-11-18)): the relation restated for the adopted placement — the salt is a member of the hashed bytes, H(JCS(credential with `salt`)), and H(bytes ∥ u) is option 2's different function; mandatory disclosure of the salt under selective-disclosure suites found to reopen the enumeration and to correlate presentations, with the proof side's requirement stated and the earlier reading on #38 withdrawn; in-circuit JSON reading named as a risk and the digest cost stated as a total; transcriptDigest stated as bound by record 003's clause. State unchanged."
+    }
+  ],
+  "reviews": [
+    {
+      "by": "Denys Popov (DenisPopov15)",
+      "date": "2026-11-18",
+      "scope": "cryptographic reading of the construction: the relation against the adopted salt placement, salt disclosure under selective-disclosure suites, in-circuit cost and JSON reading",
+      "verdict": "refined",
+      "evidence": "zkp-spec #25, record 022 points 1–3: all taken; point 2 is carried to the credential specification (cred-spec #38, PR #87), whose disposition it is"
     }
   ]
 }

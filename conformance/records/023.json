@@ -31,7 +31,8 @@
     "k — the vouch threshold the community's admission policy declares (the reference policy: 2)",
     "the applicant's admission identifier — the subject the join request names and the VMC would be issued to; disclosed by construction, since the applicant is applying",
     "context descriptor — the community and the join-request exchange (the Trust Tasks `vtc/join-requests` submission), so the proof cannot be replayed to another community or another request",
-    "transcriptDigest — the presentation transcript, bound to the join request"
+    "transcriptDigest — the presentation transcript, bound to the join request",
+    "under a rotation-capable profile: spent_root — the community's root over its strictly sorted spent rotation tags at the epoch (record 025, issuance)"
   ],
   "relation": [
     {
@@ -69,7 +70,7 @@
       "component": "003"
     },
     {
-      "clause": "under a rotation-capable profile (record 025), no voucher's leaf has its rotation tag in the community's spent-tag set at the epoch — a vouch under a secret rotated away does not count",
+      "clause": "under a rotation-capable profile (record 025), no voucher's leaf has its rotation tag in the community's spent-tag set at the epoch — a vouch under a secret rotated away does not count. Absence is proven against spent_root, the root over the strictly sorted spent tags; over an unsorted set a neighbour proof can pass for a tag that is present",
       "gadget": "non-revocation",
       "component": "025"
     }
@@ -223,6 +224,11 @@
       "date": "2026-10-27",
       "by": "mitchuski",
       "note": "formal review run 2: scope narrowed — clause 5's key derivation is not in the model (F4); clause 8 added from record 025's issuance — the rotation-tag check under a rotation-capable profile (F8); no state change"
+    },
+    {
+      "date": "2026-11-19",
+      "by": "mitchuski",
+      "note": "record 025's issuance read across (cryptographic review of 2026-11-18, zkp-spec #25): the rotation-tag clause names spent_root, the sorted spent-tag root, as a public input under a rotation-capable profile. The clause is specified and not built. State unchanged."
     }
   ],
   "formal": {

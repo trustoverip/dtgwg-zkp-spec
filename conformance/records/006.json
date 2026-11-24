@@ -23,7 +23,7 @@
     {
       "clause": "non-membership of the handle in the set committed by rl_root (sorted-leaf neighbours or accumulator non-witness)",
       "gadget": "non-revocation",
-      "runtime": ""
+      "runtime": "runtimes/circom-gadget/circuits/rotation.circom"
     }
   ],
   "disclosureSet": [
@@ -96,7 +96,8 @@
   ],
   "issuance": [
     "registry publishes rl_root per epoch, fetchable without identifying the fetcher (X4)",
-    "the registry commits rl_root over strictly sorted handles — adjacent neighbours prove a handle absent only over a sorted list; over an unsorted one they can bracket a handle that is present (the formal model's counter-deployment `unsorted_neighbours_unsound`)"
+    "the registry commits rl_root over strictly sorted handles — adjacent neighbours prove a handle absent only over a sorted list; over an unsorted one they can bracket a handle that is present (the formal model's counter-deployment `unsorted_neighbours_unsound`)",
+    "the lab's form of the sorted commitment is a tree of range leaves — one leaf per adjacent pair (lo, hi) of the strictly sorted handle list, with sentinels at both ends: a handle strictly inside one range is absent, shown by one inclusion proof and two comparisons over range-checked values"
   ],
   "provenance": {
     "spec": [
@@ -164,6 +165,11 @@
       "date": "2026-09-23",
       "by": "mitchuski",
       "note": "issuance requirement added from the formal model: rl_root over strictly sorted handles; no state change"
+    },
+    {
+      "date": "2026-11-19",
+      "by": "mitchuski",
+      "note": "the sorted-neighbour clause built as a template (RangeNonMembership) inside record 025's circuit: range leaves, 128-bit handles; fixtures R5, R7 and R12 of test-rotation.mjs exercise it, R12 being the unsorted counter-deployment. Not measured on its own; state unchanged."
     }
   ]
 }
